@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as XLSX from 'xlsx';
+import AdmZip from 'adm-zip';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -930,6 +931,138 @@ getBudget=async function(m){
   return {year,reference,total:safe(total),assist:safe(assist),health:safe(health),education:safe(education),child:safe(sub('08.243')),elderly:safe(sub('08.241')),community:safe(sub('08.244')),work:safe(sum(sub('11.333'),sub('11.334'))),qualification:safe(sum(sub('12.363'),sub('11.333'))),apprentice:safe(sum(sub('12.363'),sub('11.333'))),digital:safe(sub('04.126')),care:safe(sum(sub('08.241'),sub('08.244'))),environment:safe(env.length?env.reduce((a,b)=>a+b,0):NaN),entrepreneur:safe(sum(sub('11.334'),sub('23.691'))),source:'SICONFI / Tesouro Nacional'};
 }
 
+
+
+/* ===== v1.4 — aprendizagem oficial + emendas ===== */
+const MTE_POTENTIAL_XLS_V14='https://www.gov.br/trabalho-e-emprego/pt-br/assuntos/inspecao-do-trabalho/areas-de-atuacao/insercao-de-aprendiz-1/potencial_ead_julho-1.xlsx';
+const CNAP_ZIP_V14='https://www.gov.br/trabalho-e-emprego/pt-br/assuntos/aprendizagem-profissional/arquivos-aprendizagem-profissional/consulta-cursos-aprovados-ods/@@download/file';
+const TRANSFEREGOV_V14='https://api-publica.transferegov.gestao.gov.br/especiais';
+
+function csvRowsV14(text){
+  const first=String(text||'').split(/\r?\n/,1)[0]||'';
+  const sep=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';
+  const rows=[];let row=[],cur='',q=false;
+  const push=()=>{row.push(cur);cur=''};
+  for(let i=0;i<String(text).length;i++){
+    const ch=text[i];
+    if(ch==='"'){
+      if(q&&text[i+1]==='"'){cur+='"';i++}else q=!q;
+    }else if(ch===sep&&!q){push()}
+    else if((ch==='\n'||ch==='\r')&&!q){
+      if(ch==='\r'&&text[i+1]==='\n')i++;
+      push();if(row.some(x=>String(x).trim()!==''))rows.push(row);row=[];
+    }else cur+=ch;
+  }
+  if(cur||row.length){push();if(row.some(x=>String(x).trim()!==''))rows.push(row)}
+  return rows;
+}
+function dateV14(v){
+  const s=String(v||'').trim();if(!s)return null;
+  const br=s.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/);if(br)return new Date(Number(br[3]),Number(br[2])-1,Number(br[1]));
+  const iso=s.match(/(\d{4})-(\d{2})-(\d{2})/);if(iso)return new Date(Number(iso[1]),Number(iso[2])-1,Number(iso[3]));
+  return null;
+}
+async function getMtePotentialV14(m){
+  const key='mtePotential:v14',hit=workbookCache.get(key);
+  let rows;
+  if(hit&&Date.now()-hit.at<CACHE_TTL)rows=hit.rows;
+  else{
+    const buf=await fetchBuffer(MTE_POTENTIAL_XLS_V14,60000);
+    const wb=XLSX.read(buf,{type:'buffer',cellDates:false});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+    workbookCache.set(key,{at:Date.now(),rows});
+  }
+  for(const r of rows){
+    if(clean(r?.[0])!==clean(m.uf)||clean(r?.[1])!==clean(m.nome))continue;
+    const vals=(r||[]).slice(2,9).map(num);
+    if(vals.length>=7&&vals.every(finite)){
+      return {total:Number(vals[0]),segments:{'Comércio':Number(vals[1]),'Serviços':Number(vals[2]),'Indústria':Number(vals[3]),'Agricultura':Number(vals[4]),'Transportes':Number(vals[5]),'Outros':Number(vals[6])},reference:'jul/2026',source:'MTE/SIT · eSocial'};
+    }
+  }
+  throw new Error('Potencial de aprendizagem: município não localizado na planilha MTE');
+}
+async function getCnapV14(m){
+  const key='cnap:v14',hit=workbookCache.get(key);let rows;
+  if(hit&&Date.now()-hit.at<CACHE_TTL)rows=hit.rows;
+  else{
+    const buf=await fetchBuffer(CNAP_ZIP_V14,75000);
+    const zip=new AdmZip(buf),entries=zip.getEntries().filter(e=>!e.isDirectory&&/\.(csv|txt)$/i.test(e.entryName));
+    if(!entries.length)throw new Error('CNAP: ZIP oficial sem CSV');
+    entries.sort((a,b)=>b.header.size-a.header.size);
+    const raw=entries[0].getData();
+    let text=new TextDecoder('utf-8').decode(raw);
+    if((text.match(/\uFFFD/g)||[]).length>20)try{text=new TextDecoder('windows-1252').decode(raw)}catch{}
+    rows=csvRowsV14(text);
+    workbookCache.set(key,{at:Date.now(),rows});
+  }
+  if(rows.length<2)throw new Error('CNAP: arquivo oficial sem registros');
+  const head=rows[0].map(x=>clean(x));
+  const idx=(...names)=>{for(const n of names){const i=head.findIndex(x=>x.includes(clean(n)));if(i>=0)return i}return -1};
+  const iUf=idx('estado','uf'),iCity=idx('cidade','municipio'),iEntity=idx('razao social','entidade'),iCnpj=idx('cnpj da entidade','cnpj'),iCourse=idx('nome do curso','curso'),iProgram=idx('nome do programa','programa'),iMode=idx('modalidade do curso','modalidade'),iValid=idx('data validade','validade'),iUfEad=idx('uf modalidade a distancia','uf modalidade'),iCityEad=idx('municipio modalidade a distancia','municipio modalidade');
+  const now=new Date(),list=[];
+  for(const r of rows.slice(1)){
+    const local=(iUf>=0&&iCity>=0&&clean(r[iUf])===clean(m.uf)&&clean(r[iCity])===clean(m.nome))||(iUfEad>=0&&iCityEad>=0&&clean(r[iUfEad])===clean(m.uf)&&clean(r[iCityEad])===clean(m.nome));
+    if(!local)continue;
+    const validity=iValid>=0?dateV14(r[iValid]):null;if(validity&&validity<now)continue;
+    list.push({entity:iEntity>=0?String(r[iEntity]||'').trim():'',cnpj:iCnpj>=0?String(r[iCnpj]||'').trim():'',course:iCourse>=0?String(r[iCourse]||'').trim():'',program:iProgram>=0?String(r[iProgram]||'').trim():'',mode:iMode>=0?String(r[iMode]||'').trim():'',validity:iValid>=0?String(r[iValid]||'').trim():''});
+  }
+  const entities=new Set(list.map(x=>x.cnpj||x.entity).filter(Boolean));
+  const rede=list.filter(x=>/rede cidada|rede cidadã/i.test(x.entity));
+  const modes=[...new Set(list.map(x=>x.mode).filter(Boolean))];
+  return {courses:list.length,entities:entities.size,redeCidada:rede.length,modes,sample:(rede.length?rede:list).slice(0,6),reference:'03/09/2026',source:'CNAP/MTE · CSV oficial'};
+}
+async function getApprenticeshipV14(m){
+  const [p,c]=await Promise.allSettled([getMtePotentialV14(m),getCnapV14(m)]);
+  if(p.status==='rejected'&&c.status==='rejected')throw new Error('MTE/CNAP sem retorno');
+  return {potential:p.status==='fulfilled'?p.value:null,cnap:c.status==='fulfilled'?c.value:null,source:'MTE/SIT + CNAP',reference:'2026'};
+}
+
+async function tgRowsV14(table,params={}){
+  const u=new URL(TRANSFEREGOV_V14+'/'+table);
+  for(const [k,v] of Object.entries(params))if(v!==null&&v!==undefined&&v!=='')u.searchParams.set(k,String(v));
+  const d=await fetchJson(u.toString(),45000);
+  return Array.isArray(d?.data)?d.data:[];
+}
+function moneyNumV14(v){const n=num(v);return finite(n)?Number(n):0}
+async function getFederalAmendmentsV14(m){
+  let beneficiaries=[];
+  for(const id of [m.ibge,m.ibge.slice(0,6)]){
+    try{beneficiaries=await tgRowsV14('beneficiarios_especiais',{id_ente:id});if(beneficiaries.length)break}catch{}
+  }
+  if(!beneficiaries.length)throw new Error('Transferegov: beneficiário municipal não localizado em transferências especiais');
+  let plans=[];
+  for(const b of beneficiaries){
+    try{plans.push(...await tgRowsV14('planos_acao_especiais',{id_beneficiario:b.id_beneficiario}))}catch{}
+  }
+  const uniq=new Map();for(const p of plans)uniq.set(String(p.id_plano_acao),p);plans=[...uniq.values()];
+  plans.sort((a,b)=>Number(b.ano_plano_acao||0)-Number(a.ano_plano_acao||0));
+  const selected=plans.slice(0,40);
+  let empenhado=0,executado=0,pendente=0,withExecution=0;
+  const detail=await Promise.all(selected.map(async p=>{
+    const id=p.id_plano_acao;
+    const [emp,repNew,repOld]=await Promise.all([
+      tgRowsV14('empenhos_especiais',{id_plano_acao:id}).catch(()=>[]),
+      tgRowsV14('relatorios_gestao_novos_especiais',{id_plano_acao:id}).catch(()=>[]),
+      tgRowsV14('relatorios_gestao_especiais',{id_plano_acao:id}).catch(()=>[])
+    ]);
+    const empVal=emp.reduce((s,x)=>s+moneyNumV14(x.valor_empenho),0);empenhado+=empVal;
+    const reps=[...repNew,...repOld];
+    reps.sort((a,b)=>String(b.data_e_hora_relatorio_gestao_novo||b.data_e_hora_relatorio_gestao||b.data_relatorio_gestao_novo||b.data_relatorio_gestao||'').localeCompare(String(a.data_e_hora_relatorio_gestao_novo||a.data_e_hora_relatorio_gestao||a.data_relatorio_gestao_novo||a.data_relatorio_gestao||'')));
+    const r=reps[0];const execVal=moneyNumV14(r?.valor_executado_relatorio_gestao_novo??r?.valor_executado_relatorio_gestao),pendVal=moneyNumV14(r?.valor_pendente_relatorio_gestao_novo??r?.valor_pendente_relatorio_gestao);
+    if(r){executado+=execVal;pendente+=pendVal;withExecution++}
+    return {id,codigo:p.codigo_emenda_parlamentar_formatado_plano_acao||p.codigo_plano_acao||String(id),year:Number(p.ano_emenda_parlamentar_plano_acao||p.ano_plano_acao)||null,author:p.nome_parlamentar_emenda_plano_acao||'',object:p.detalhamento_objeto||p.nome_objeto||p.descricao_programacao_orcamentaria_plano_acao||'',area:p.codigo_descricao_areas_politicas_publicas_plano_acao||'',status:p.situacao_plano_acao||'',indicated:moneyNumV14(p.valor_custeio_plano_acao)+moneyNumV14(p.valor_investimento_plano_acao),committed:empVal,executed:execVal,pending:pendVal};
+  }));
+  const indicated=plans.reduce((s,p)=>s+moneyNumV14(p.valor_custeio_plano_acao)+moneyNumV14(p.valor_investimento_plano_acao),0);
+  return {count:plans.length,indicated,committed:empenhado,executed,executionPending:pendente,executionReports:withExecution,items:detail.sort((a,b)=>(b.year||0)-(a.year||0)||b.indicated-a.indicated).slice(0,8),source:'Transferegov · Transferências Especiais',reference:'API pública'};
+}
+async function getEmendasV14(m){
+  const federal=await getFederalAmendmentsV14(m).catch(e=>({status:'unavailable',message:e.message,count:null,indicated:null,committed:null,executed:null,items:[]}));
+  const state={status:'connector',source:m.uf==='MG'?'Portal de Dados Abertos MG · SIAFI/SISOR':'Portal estadual de transparência',message:'Execução estadual depende de conector estruturado específico por UF.',url:m.uf==='MG'?'https://dados.mg.gov.br/dataset/dados-armazem-siafi-2026':null};
+  const municipal={status:'connector',source:m.ibge==='3106200'?'Prefeitura de Belo Horizonte · Transparência de Emendas':'Portal municipal de transparência',message:'Emendas municipais não possuem API nacional única; o conector local é utilizado quando a fonte oferece dados estruturados.',url:m.ibge==='3106200'?'https://prefeitura.pbh.gov.br/transparencia/transparencia-emendas':null};
+  return {federal,state,municipal,source:'Transferegov + conectores locais',reference:new Date().getFullYear()};
+}
+
 async function settled(name, fn, label) {
   try {
     const data=await fn();
@@ -954,7 +1087,9 @@ async function diagnostic(m) {
     settled('popRua',()=>getPopRua(m),'RMA Centro POP / MDS'),
     settled('suas',()=>getSuas(m),'RMA / MDS'),
     settled('cadunico',()=>getCadunico(m),'RI Social / MDS'),
-    settled('budget',()=>getBudget(m),'SICONFI / Tesouro Nacional')
+    settled('budget',()=>getBudget(m),'SICONFI / Tesouro Nacional'),
+    settled('apprenticeship',()=>getApprenticeshipV14(m),'MTE/SIT + CNAP'),
+    settled('emendas',()=>getEmendasV14(m),'Transferegov + portais de transparência')
   ]);
   const data={}, sources={};
   for (const j of jobs) { data[j.name]=j.data; sources[j.name]=j.source; }
@@ -971,10 +1106,18 @@ async function diagnostic(m) {
     sources.cadunico.status='partial';
     sources.cadunico.message='Cadastro Único carregado parcialmente; alguns recortes não estão expostos na fonte municipal aberta utilizada.';
   }
+  if (data.apprenticeship && (!data.apprenticeship.potential || !data.apprenticeship.cnap)) {
+    sources.apprenticeship.status='partial';
+    sources.apprenticeship.message='Potencial MTE e CNAP são processados separadamente; uma das fontes não respondeu.';
+  }
+  if (data.emendas && data.emendas.federal?.status==='unavailable') {
+    sources.emendas.status='partial';
+    sources.emendas.message='Camada de emendas ativa, mas a consulta federal estruturada não respondeu nesta execução.';
+  }
 
   return {
     ok:true,
-    version:'1.3.0',
+    version:'1.4.0',
     municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},
     generatedAt:new Date().toISOString(),
     cacheTtlSeconds:CACHE_TTL/1000,
@@ -1000,7 +1143,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.3.0',
+        version:'1.4.0',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}'],
         time:new Date().toISOString()
       });
