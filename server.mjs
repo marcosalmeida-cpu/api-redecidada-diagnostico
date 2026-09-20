@@ -126,6 +126,42 @@ function visMunicipalUrl(base,m){
   u.searchParams.set('codigo',String(m.ibge).slice(0,6));
   return u.toString();
 }
+function visNum(v){
+  let s=String(v??'').trim();
+  if(!s||s==='-'||s==='—')return NaN;
+  s=s.replace(/R\$\s*/g,'').replace(/\s+/g,'');
+  if(/^[-+]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))s=s.replace(/\./g,'').replace(',','.');
+  else if(/^[-+]?\d+(,\d+)$/.test(s))s=s.replace(',','.');
+  else s=s.replace(/[^0-9.\-]/g,'');
+  const n=Number(s);return Number.isFinite(n)?n:NaN;
+}
+function visTableMetrics(html){
+  const out=[],text=String(html||'');
+  for(const tm of text.matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)){
+    const idx=tm.index||0;
+    const context=clean(stripHtml(text.slice(Math.max(0,idx-1400),idx)).slice(-900));
+    const rows=[];
+    for(const rm of tm[1].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){
+      const cells=[...rm[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>stripHtml(x[1]));
+      if(cells.length)rows.push(cells);
+    }
+    const latest=latestVisRowFromRows(rows,1);
+    if(latest)out.push({context,...latest});
+  }
+  return out;
+}
+function latestVisRowFromRows(rows,minValues=1){
+  const found=[];
+  for(const row of rows||[]){
+    const pi=row.findIndex(x=>periodCell(x));
+    if(pi<0)continue;
+    const p=periodCell(row[pi]),values=[];
+    for(let i=pi+1;i<row.length;i++){const v=visNum(row[i]);if(Number.isFinite(v))values.push(Number(v))}
+    if(values.length>=minValues)found.push({...p,values,row});
+  }
+  found.sort((a,b)=>b.key-a.key || b.values.length-a.values.length);
+  return found[0]||null;
+}
 function latestVisRow(html,minValues=1){
   const found=[];
   for(const rows of htmlTables(html)){
@@ -147,10 +183,16 @@ function latestVisRow(html,minValues=1){
 async function visMunicipalLatest(base,m,minValues=1,timeout=10000){
   try{
     const html=await fetchText(visMunicipalUrl(base,m),timeout);
-    const text=stripHtml(html);
-    if(m.nome&&!clean(text).includes(clean(m.nome)))return null;
     return latestVisRow(html,minValues);
   }catch{return null}
+}
+async function visMunicipalMetrics(base,m,timeout=10000){
+  try{return visTableMetrics(await fetchText(visMunicipalUrl(base,m),timeout))}catch{return []}
+}
+function visMetric(metrics,rx){
+  const cands=(metrics||[]).filter(x=>rx.test(x.context));
+  cands.sort((a,b)=>b.context.lastIndexOf((b.context.match(rx)||[''])[0])-a.context.lastIndexOf((a.context.match(rx)||[''])[0]));
+  return cands[0]?.values?.[0]??null;
 }
 
 function latestSeries(rows){const found=[];for(const row of rows||[]){const pi=row.findIndex(x=>periodCell(x));if(pi<0)continue;const p=periodCell(row[pi]);let value=NaN;for(let i=pi+1;i<row.length;i++){const v=num(row[i]);if(finite(v)){value=Number(v);break}}if(finite(value))found.push({...p,value})}found.sort((a,b)=>b.key-a.key);return found[0]||null}
@@ -212,9 +254,9 @@ async function liveCadunico(m){
   if(snap)return snap;
   const [income,pbf,pcd,bpc]=await Promise.all([
     visMunicipalLatest(VIS_FAMILIAS_RENDA,m,3,10000),
-    visMunicipalLatest(VIS_BOLSA_FAMILIA,m,8,10000),
+    visMunicipalLatest(VIS_BOLSA_FAMILIA,m,1,10000),
     visMunicipalLatest(VIS_PCD_CADUNICO,m,1,10000),
-    visMunicipalLatest(VIS_BPC,m,5,10000)
+    visMunicipalMetrics(VIS_BPC,m,10000)
   ]);
   const out={source:'MDS · VIS DATA',notes:[]};
   if(income){
@@ -229,18 +271,22 @@ async function liveCadunico(m){
     out.notes.push('Desde março de 2023, o conjunto aberto nacional não publica extrema pobreza separadamente; pobreza corresponde à linha administrativa do Programa Bolsa Família.');
   }
   if(pbf){
-    out.bolsaFamiliaFamilies=safe(pbf.values.slice(0,8).reduce((s,v)=>s+(finite(v)?Number(v):0),0));
+    out.bolsaFamiliaFamilies=safe(pbf.values[0]);
     out.bolsaFamiliaReference=String(pbf.month).padStart(2,'0')+'/'+pbf.year;
   }
   if(pcd){
     out.pcdPeople=safe(pcd.values[0]);
     out.pcdReference=String(pcd.month).padStart(2,'0')+'/'+pcd.year;
   }
-  if(bpc){
-    out.bpcPcd=safe(bpc.values[0]);
-    out.bpcElderly=safe(bpc.values[1]);
-    out.bpcTotal=safe(bpc.values[4]);
-    out.bpcReference=String(bpc.month).padStart(2,'0')+'/'+bpc.year;
+  if(Array.isArray(bpc)&&bpc.length){
+    const pcd=visMetric(bpc,/pessoas com deficiencia.*beneficiarias do bpc/);
+    const elderly=visMetric(bpc,/idosos.*beneficiari.*bpc/);
+    const total=visMetric(bpc,/total de beneficiarios do bpc/);
+    out.bpcPcd=safe(pcd);
+    out.bpcElderly=safe(elderly);
+    out.bpcTotal=safe(total);
+    const latest=bpc.slice().sort((a,b)=>b.key-a.key)[0];
+    if(latest)out.bpcReference=String(latest.month).padStart(2,'0')+'/'+latest.year;
     out.bpcBasis='município pagador';
   }
   const useful=[out.families,out.povertyFamilies,out.lowIncomeFamilies,out.bolsaFamiliaFamilies,out.pcdPeople,out.bpcTotal].some(finite);
@@ -346,13 +392,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.5.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.6.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.5.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.6.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
