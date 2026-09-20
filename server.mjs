@@ -84,6 +84,17 @@ function stripHtml(s){return String(s||'').replace(/&nbsp;|&#160;/gi,' ').replac
 function htmlTables(html){const out=[];for(const tm of String(html||'').matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)){const rows=[];for(const rm of tm[1].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){const cells=[...rm[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>stripHtml(x[1]));if(cells.length)rows.push(cells)}if(rows.length)out.push(rows)}return out}
 function periodCell(v){const m=String(v||'').match(/(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/);return m?{month:Number(m[1]),year:Number(m[2]),key:Number(m[2])*100+Number(m[1])}:null}
 function latestSeries(rows){const found=[];for(const row of rows||[]){const pi=row.findIndex(x=>periodCell(x));if(pi<0)continue;const p=periodCell(row[pi]);let value=NaN;for(let i=pi+1;i<row.length;i++){const v=num(row[i]);if(finite(v)){value=Number(v);break}}if(finite(value))found.push({...p,value})}found.sort((a,b)=>b.key-a.key);return found[0]||null}
+async function ibgeCategoryPercent(table,m,rx){
+  try{const meta=await ibgeMeta(table);const cls=(meta?.classificacoes||[]).find(x=>(x.categorias||[]).some(a=>rx.test(clean(a.nome))));if(!cls)return null;const cq=(meta.classificacoes||[]).map(x=>x.id+'['+(x.id===cls.id?'all':totalCategory(x))+']').join('|');const rows=aggFlat(await ibgeData(table,2022,'all',m,cq)).filter(x=>finite(x.value));const perc=rows.filter(x=>clean(x.variable).includes('percentual')&&(x.labels||[]).some(a=>rx.test(clean(a))));if(perc.length)return perc.reduce((s,x)=>s+Number(x.value),0);const counts=rows.filter(x=>!clean(x.variable).includes('percentual'));for(const variable of [...new Set(counts.map(x=>String(x.variableId)))]){const pool=counts.filter(x=>String(x.variableId)===variable);const total=pool.find(x=>(x.labels||[]).some(a=>clean(a)==='total'));const targets=pool.filter(x=>(x.labels||[]).some(a=>rx.test(clean(a))));if(total&&targets.length&&Number(total.value)>0)return 100*targets.reduce((s,x)=>s+Number(x.value),0)/Number(total.value)}return null}catch{return null}
+}
+async function liveConditions(m){
+  const snap=await snapshot('condicoes',m.ibge);const out=snap?{...snap}:{};
+  if(!finite(out.waterPercent))out.waterPercent=await ibgeCategoryPercent(6803,m,/rede geral de distribuicao/);
+  if(!finite(out.sewerPercent))out.sewerPercent=await ibgeCategoryPercent(6805,m,/rede geral|rede pluvial|fossa septica/);
+  if(!finite(out.wastePercent))out.wastePercent=await ibgeCategoryPercent(6892,m,/coletad/);
+  const ok=[out.waterPercent,out.sewerPercent,out.wastePercent,out.apsCoverage,out.ubs,out.caps].some(finite);
+  return ok?result('condicoes',snap?'ok':'partial',out,snap?'IBGE + SINISA + SUS snapshot':'IBGE · Censo 2022','Condições domiciliares carregadas automaticamente; saúde e SINISA entram quando o snapshot estiver disponível.',out.reference||'Censo 2022'):result('condicoes','bad',null,'IBGE + SINISA + SUS','Condições de vida não responderam nesta consulta.','');
+}
 async function liveCadunico(m){
   const snap=await snapshot('cadunico',m.ibge);if(snap)return snap;
   const code6=String(m.ibge).slice(0,6);
@@ -174,7 +185,7 @@ const loaders={
   aprendizagem:m=>snapshotModule('aprendizagem',m,'MTE/SIT · eSocial snapshot','Aprendizagem profissional'),
   protecao:m=>snapshotModule('suas',m,'MDS · Censo SUAS snapshot','Rede de proteção'),
   publicos:m=>snapshotModule('publicos',m,'IBGE/MDS snapshots','Públicos específicos'),
-  condicoes:m=>snapshotModule('condicoes',m,'IBGE + SINISA + SUS snapshots','Condições de vida e saúde'),
+  condicoes:liveConditions,
   capacidade:m=>snapshotModule('capacidade',m,'IBGE MUNIC + Censo SUAS snapshot','Capacidade institucional'),
   orcamento:budget,
   recursos:resources,
@@ -205,13 +216,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.1.1',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.2.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.1.1',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.2.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
