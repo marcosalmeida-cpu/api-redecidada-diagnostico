@@ -559,6 +559,297 @@ async function getIvcad(m) {
   throw new Error('IVCAD estruturado não localizado; painel oficial permanece como conferência');
 }
 
+
+
+/* ===== v1.2 — robustez para RMA/SUAS, IPS/IVCAD, educação e orçamento ===== */
+function htmlDecode(s){
+  return String(s??'')
+    .replace(/&nbsp;|&#160;/gi,' ')
+    .replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'")
+    .replace(/&lt;/gi,'<').replace(/&gt;/gi,'>')
+    .replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(Number(n)));
+}
+function stripHtml(s){
+  return htmlDecode(String(s??'').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ')).replace(/\s+/g,' ').trim();
+}
+function parseHtmlTables(html){
+  const tables=[];
+  const tableMatches=[...String(html||'').matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)];
+  for(const tm of tableMatches){
+    const rows=[];
+    for(const rm of tm[1].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){
+      const cells=[...rm[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>stripHtml(x[1]));
+      if(cells.length)rows.push(cells);
+    }
+    if(rows.length)tables.push(rows);
+  }
+  return tables;
+}
+function periodKey(s){
+  const m=String(s||'').match(/(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/);
+  if(!m)return null;
+  return {month:Number(m[1]),year:Number(m[2]),key:Number(m[2])*100+Number(m[1])};
+}
+function parseRmaUnitPage(html){
+  for(const rows of parseHtmlTables(html)){
+    let hi=rows.findIndex(r=>r.some(x=>/^refer[eê]ncia$/i.test(clean(x))) && r.length>5);
+    if(hi<0)hi=rows.findIndex(r=>r.some(x=>/^refer[eê]ncia/i.test(clean(x))) && r.length>5);
+    if(hi<0)continue;
+    const headers=rows[hi].map(x=>clean(x).replace(/[^a-z0-9]/g,''));
+    const out=[];
+    for(const row of rows.slice(hi+1)){
+      const p=periodKey(row[0]);
+      if(!p)continue;
+      const values={};
+      headers.forEach((h,i)=>{
+        if(!h||i===0)return;
+        const v=num(row[i]);
+        if(finite(v))values[h]=Number(v);
+      });
+      out.push({...p,values});
+    }
+    if(out.length)return out;
+  }
+  return [];
+}
+async function rmaMunicipalIndex(m){
+  const code6=String(m.ibge).slice(0,6);
+  const url=\`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_unidade.php?p_ibge=\${code6}\`;
+  const html=await fetchText(url,25000);
+  const types={cras:new Set(),creas:new Set(),pop:new Set()};
+  const rules=[
+    ['cras',/lista_preenchimento_cras_unidade\.php\?p_id_cras=(\d+)/gi],
+    ['creas',/lista_preenchimento_creas_unidade\.php\?p_id_creas=(\d+)/gi],
+    ['pop',/lista_preenchimento_centropop_unidade\.php\?p_id_unidade=(\d+)/gi]
+  ];
+  for(const [type,rx] of rules)for(const mm of html.matchAll(rx))types[type].add(mm[1]);
+  // contingência para páginas em que os links são montados por javascript, usando os IDs exibidos na listagem
+  const txt=stripHtml(html);
+  if(!types.cras.size)for(const mm of txt.matchAll(/\b(310620\d{5}|[1-9]\d{10})\b/g)){/* não inferir tipo sem link */}
+  return {url,types:{cras:[...types.cras],creas:[...types.creas],pop:[...types.pop]}};
+}
+async function rmaUnitSeries(type,id){
+  const url=type==='cras'
+    ? \`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_cras_unidade.php?p_id_cras=\${id}\`
+    : type==='creas'
+    ? \`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_creas_unidade.php?p_id_creas=\${id}\`
+    : \`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_centropop_unidade.php?p_id_unidade=\${id}\`;
+  const html=await fetchText(url,25000);
+  const series=parseRmaUnitPage(html);
+  if(!series.length)throw new Error(\`RMA \${type}: unidade \${id} sem tabela legível\`);
+  return {id,url,series};
+}
+function chooseRmaPeriod(units){
+  const count=new Map(),total=units.length;
+  for(const u of units){
+    const seen=new Set(u.series.map(r=>r.key));
+    for(const k of seen)count.set(k,(count.get(k)||0)+1);
+  }
+  const all=[...count.entries()].map(([key,n])=>({key,n,year:Math.floor(key/100),month:key%100}));
+  if(!all.length)return null;
+  const threshold=Math.max(1,Math.ceil(total*.7));
+  const complete=all.filter(x=>x.n>=threshold).sort((a,b)=>b.key-a.key);
+  if(complete.length)return {...complete[0],total};
+  all.sort((a,b)=>b.n-a.n||b.key-a.key);
+  return {...all[0],total};
+}
+function aggregateRma(units,key,codes){
+  const out={};
+  for(const code of codes)out[code]=0;
+  const found=Object.fromEntries(codes.map(k=>[k,false]));
+  let reporting=0;
+  for(const u of units){
+    const row=u.series.find(r=>r.key===key);
+    if(!row)continue;
+    reporting++;
+    for(const code of codes){
+      let v=row.values[code];
+      if(!finite(v) && ['j4','j5','j6'].includes(code)){
+        const a=row.values[code+'a'],b=row.values[code+'b'];
+        if(finite(a)||finite(b))v=(Number(a)||0)+(Number(b)||0);
+      }
+      if(finite(v)){out[code]+=Number(v);found[code]=true}
+    }
+  }
+  for(const k of codes)if(!found[k])out[k]=null;
+  return {values:out,reporting};
+}
+function rmaTrend(units,code,limit=6){
+  const keys=[...new Set(units.flatMap(u=>u.series.map(r=>r.key)))].sort((a,b)=>b-a).slice(0,12);
+  const rows=[];
+  for(const key of keys){
+    const agg=aggregateRma(units,key,[code]);
+    if(finite(agg.values[code]))rows.push({year:Math.floor(key/100),month:key%100,value:Number(agg.values[code]),reporting:agg.reporting});
+    if(rows.length>=limit)break;
+  }
+  return rows.reverse();
+}
+async function getMse(m){
+  const idx=await rmaMunicipalIndex(m);
+  if(!idx.types.creas.length)throw new Error('RMA: nenhum CREAS localizado para o município');
+  const settledUnits=await Promise.allSettled(idx.types.creas.map(id=>rmaUnitSeries('creas',id)));
+  const units=settledUnits.filter(x=>x.status==='fulfilled').map(x=>x.value);
+  if(!units.length)throw new Error('RMA CREAS: nenhuma unidade respondeu');
+  const p=chooseRmaPeriod(units); if(!p)throw new Error('RMA CREAS sem competência legível');
+  const a=aggregateRma(units,p.key,['j1','j2','j3','j4','j5','j6']);
+  return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.creas.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.creas.length,trend:rmaTrend(units,'j1',6),source:'MDS · RMA CREAS (consulta pública por unidade)',reference:\`\${String(p.month).padStart(2,'0')}/\${p.year}\`};
+}
+async function getPopRua(m){
+  const idx=await rmaMunicipalIndex(m);
+  if(!idx.types.pop.length)throw new Error('RMA: nenhum Centro POP localizado para o município');
+  const settledUnits=await Promise.allSettled(idx.types.pop.map(id=>rmaUnitSeries('pop',id)));
+  const units=settledUnits.filter(x=>x.status==='fulfilled').map(x=>x.value);
+  if(!units.length)throw new Error('RMA Centro POP: nenhuma unidade respondeu');
+  const p=chooseRmaPeriod(units); if(!p)throw new Error('RMA Centro POP sem competência legível');
+  const a=aggregateRma(units,p.key,['a1','c1','c2','d1','e1','f1']);
+  return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.pop.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.pop.length,trend:rmaTrend(units,'a1',6),source:'MDS · RMA Centro POP (consulta pública por unidade)',reference:\`\${String(p.month).padStart(2,'0')}/\${p.year}\`};
+}
+async function getSuas(m){
+  const idx=await rmaMunicipalIndex(m);
+  return {year:new Date().getFullYear(),cras:idx.types.cras.length,creas:idx.types.creas.length,centroPop:idx.types.pop.length,source:'MDS · Sistema RMA · unidades cadastradas',reference:'consulta municipal'};
+}
+function slugifyPt(s){
+  return clean(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+function plainPageText(html){
+  return htmlDecode(String(html||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|li|div|tr|section|article|h\d)>/gi,'\n').replace(/<[^>]+>/g,' ')).replace(/[ \t]+/g,' ').replace(/\n\s*\n+/g,'\n');
+}
+function labeledNumber(text,labelRx){
+  const m=text.match(new RegExp(labelRx.source+'[\\\\s\\\\S]{0,220}?([0-9][0-9.]*?(?:,[0-9]+)?)\\\\s*(?:matr[ií]culas|docentes|escolas|%|\\\\[)',labelRx.flags.includes('i')?'i':''));
+  return m?num(m[1]):NaN;
+}
+function labeledYear(text,labelRx){
+  const m=text.match(new RegExp(labelRx.source+'[\\\\s\\\\S]{0,260}?\\\\[(20\\\\d{2})\\\\]',labelRx.flags.includes('i')?'i':''));
+  return m?Number(m[1]):null;
+}
+async function ibgeCityEducation(m){
+  if(!m.uf||!m.nome)return null;
+  try{
+    const url=\`https://www.ibge.gov.br/cidades-e-estados/\${String(m.uf).toLowerCase()}/\${slugifyPt(m.nome)}\`;
+    const text=plainPageText(await fetchText(url,25000));
+    const rFund=/Matr[ií]culas no ensino fundamental/i,rTeach=/Docentes no ensino fundamental/i,rSchool=/N[uú]mero de estabelecimentos de ensino fundamental/i;
+    const rIni=/IDEB\s*[–-]\s*Anos iniciais do ensino fundamental/i,rFin=/IDEB\s*[–-]\s*Anos finais do ensino fundamental/i;
+    const get=(rx)=>{const mm=text.match(new RegExp(rx.source+'[\\\\s\\\\S]{0,180}?([0-9]+(?:[.,][0-9]+)?)', 'i'));return mm?num(mm[1]):NaN};
+    return {enrollments:safe(labeledNumber(text,rFund)),teachers:safe(labeledNumber(text,rTeach)),schools:safe(labeledNumber(text,rSchool)),idebInitial:safe(get(rIni)),idebFinal:safe(get(rFin)),year:labeledYear(text,rFund),idebYear:labeledYear(text,rIni),source:'IBGE Cidades · fonte educacional INEP'};
+  }catch{return null}
+}
+let ipsCacheV12=new Map();
+function tableObjectFromHtml(html,ibge){
+  for(const rows of parseHtmlTables(html)){
+    const hi=rows.findIndex(r=>r.some(x=>/c[oó]digo ibge/i.test(x))&&r.some(x=>/munic[ií]pio/i.test(x)));
+    if(hi<0)continue;
+    const headers=rows[hi].map(x=>String(x).trim());
+    for(const row of rows.slice(hi+1)){
+      const code=String(row[0]||'').replace(/\D/g,'');
+      if(code!==String(ibge))continue;
+      const o={};headers.forEach((h,i)=>o[h]=row[i]??'');return o;
+    }
+  }
+  return null;
+}
+async function ipsMunicipalRow(m){
+  if(ipsCacheV12.has(m.ibge))return ipsCacheV12.get(m.ibge);
+  const stateCode=String(m.ibge).slice(0,2);
+  const urls=[
+    \`https://ipsbrasil.org.br/blog/explore/dados/download?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=\${stateCode}\`,
+    \`https://ipsbrasil.org.br/pt/explore/dados?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=\${stateCode}\`
+  ];
+  for(const u of urls){
+    try{const row=tableObjectFromHtml(await fetchText(u,30000),m.ibge);if(row){ipsCacheV12.set(m.ibge,row);return row}}catch{}
+  }
+  return null;
+}
+function rowVal(row,rx){
+  if(!row)return NaN;
+  for(const [k,v] of Object.entries(row))if(rx.test(clean(k)))return num(v);
+  return NaN;
+}
+function ivcadNorm(v){
+  let n=num(v);if(!finite(n))return NaN;
+  if(n>1&&n<=100)n/=100;
+  return n>=0&&n<=1?n:NaN;
+}
+async function getIvcad(m){
+  const local=await localIvcad(m);if(local&&finite(local.general))return local;
+  const template=String(process.env.IVCAD_JSON_URL_TEMPLATE||'').trim();
+  if(template){try{const x=normalizeIvcad(await fetchJson(template.replace('{ibge}',encodeURIComponent(m.ibge)),24000));if(x)return x}catch{}}
+  try{
+    const row=await ipsMunicipalRow(m),v=ivcadNorm(rowVal(row,/indice de vulnerabilidade das familias do cadastro unico|ivcad/));
+    if(finite(v))return {general:Number(v),dims:{NC:null,DPI:null,DCA:null,TQA:null,DR:null,CH:null},indicators:{},source:'IPS Brasil 2025 · fonte original Cadastro Único/MDS',reference:'2025'};
+  }catch{}
+  throw new Error('IVCAD geral não localizado em fonte estruturada; dimensões permanecem disponíveis no painel oficial do MDS');
+}
+async function latestSebraeYear(cube){
+  try{
+    const u=new URL('https://api-observatorio.sebrae.com.br/members');u.searchParams.set('cube',cube);u.searchParams.set('level','Year');u.searchParams.set('locale','pt');
+    const d=await fetchJson(u,18000);const years=(d?.data||[]).map(x=>Number(x.ID??x.Year??x.Label)).filter(x=>x>=2000&&x<=2100).sort((a,b)=>b-a);
+    return years;
+  }catch{return[]}
+}
+async function getEducation(m){
+  const out={literacyPercent:null,lowEducationPercent:null,instruction:null,enrollments:null,teachers:null,classes:null,schools:null,year:null,idebInitial:null,idebFinal:null,idebYear:null};
+  try{const meta=await ibgeMeta(9543),d=await ibgeData(9543,2022,'all',m,classQuery(meta,[])),r=aggFlat(d).find(x=>finite(x.value)&&clean(x.variable).includes('taxa de alfabetizacao'));if(r)out.literacyPercent=safe(r.value)}catch{}
+  try{
+    const meta=await ibgeMeta(10061),d=await ibgeData(10061,2022,'all',m,classQuery(meta,[/nivel de instrucao/])),rows=aggFlat(d).filter(x=>finite(x.value)&&!clean(x.variable).includes('percentual'));
+    const labels=['Sem instrução e fundamental incompleto','Fundamental completo e médio incompleto','Médio completo e superior incompleto','Superior completo'];
+    const values=labels.map(l=>rows.find(x=>x.labels.some(a=>clean(a)===clean(l)))?.value||0),total=values.reduce((a,b)=>a+b,0);
+    if(total){out.instruction={labels,values,total};out.lowEducationPercent=100*(values[0]+values[1])/total}
+  }catch{}
+  const years=(await latestSebraeYear('INEP_Censo_Ed_Basica')).slice(0,5);for(const y of (years.length?years:[2025,2024,2023,2022])){
+    try{const rows=await sebrae({cube:'INEP_Censo_Ed_Basica',drilldowns:'Municipality,Year',measures:'Enrollments,Teachers,Classes',Municipality:m.ibge,Year:y,parents:'false'},22000);if(rows.length){const r=rows[0];out.enrollments=safe(num(r.Enrollments));out.teachers=safe(num(r.Teachers));out.classes=safe(num(r.Classes));out.year=y;break}}catch{}
+  }
+  const idebYears=(await latestSebraeYear('INEP_IDEB_Municipio')).slice(0,5);for(const y of (idebYears.length?idebYears:[2025,2023,2021])){
+    try{
+      const rows=await sebrae({cube:'INEP_IDEB_Municipio',drilldowns:'Municipality,Year,Education Level',measures:'IDEB Index',Municipality:m.ibge,Year:y,parents:'false'},22000);
+      if(rows.length){const valid=rows.filter(r=>finite(num(r['IDEB Index']))),avg=a=>a.length?a.reduce((s,r)=>s+num(r['IDEB Index']),0)/a.length:NaN,ini=valid.filter(r=>/iniciais|early/i.test(r['Education Level']||'')),fin=valid.filter(r=>/finais|final/i.test(r['Education Level']||''));out.idebInitial=safe(avg(ini));out.idebFinal=safe(avg(fin));out.idebYear=y;if(finite(out.idebInitial)||finite(out.idebFinal))break}
+    }catch{}
+  }
+  const city=await ibgeCityEducation(m);
+  if(city){
+    for(const k of ['enrollments','teachers','schools','idebInitial','idebFinal'])if(!finite(out[k])&&finite(city[k]))out[k]=Number(city[k]);
+    out.year ||= city.year;out.idebYear ||= city.idebYear;
+  }
+  if(!finite(out.idebInitial)&&!finite(out.idebFinal)){
+    try{const row=await ipsMunicipalRow(m),v=rowVal(row,/ideb ensino fundamental/);if(finite(v)){out.idebInitial=Number(v);out.idebYear=2025}}catch{}
+  }
+  if(![out.literacyPercent,out.lowEducationPercent,out.enrollments,out.teachers,out.idebInitial,out.idebFinal].some(finite))throw new Error('Bases educacionais sem retorno');
+  out.source='IBGE + INEP (Observatório Sebrae / IBGE Cidades) + IPS Brasil como contingência';
+  return out;
+}
+async function getCadunico(m){
+  const urls=[];
+  for(const code of [m.ibge,m.ibge.slice(0,6)]){
+    urls.push(\`https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo=\${code}\`);
+    urls.push(\`https://aplicacoes.cidadania.gov.br/ri/ri/relatorios/cidadania/?codigo=\${code}\`);
+  }
+  let text='';
+  for(const raw of urls){
+    for(const u of [raw,\`https://r.jina.ai/\${raw}\`]){
+      try{const t=await fetchText(u,22000);if(t&&t.length>1800){text=t;break}}catch{}
+    }
+    if(text)break;
+  }
+  if(!text)throw new Error('Cadastro Único: fonte municipal sem leitura automática');
+  const families=findTextNumber(text,[/(?:fam[ií]lias)[^\d]{0,120}(?:cadastrad|inscrit)[^\d]{0,40}([\d\.]+)/i,/([\d\.]+)\s*fam[ií]lias[^\n]{0,100}cadastro [uú]nico/i]);
+  const people=findTextNumber(text,[/(?:pessoas)[^\d]{0,120}(?:cadastrad|inscrit)[^\d]{0,40}([\d\.]+)/i,/([\d\.]+)\s*pessoas[^\n]{0,100}cadastro [uú]nico/i]);
+  const low=findTextNumber(text,[/(?:baixa renda|pobreza)[^\d]{0,120}([\d\.]+)\s*(?:fam[ií]lias|pessoas)/i,/([\d\.]+)\s*(?:fam[ií]lias|pessoas)[^\n]{0,120}(?:baixa renda|pobreza)/i]);
+  const street=findTextNumber(text,[/(?:situa[cç][aã]o de rua)[^\d]{0,120}([\d\.]+)\s*(?:pessoas|fam[ií]lias)/i,/([\d\.]+)\s*(?:pessoas|fam[ií]lias)[^\n]{0,120}(?:situa[cç][aã]o de rua)/i]);
+  if(![families,people,low,street].some(finite))throw new Error('Cadastro Único: página respondeu, mas sem indicadores estruturados');
+  return {families:safe(families),people:safe(people),lowIncome:safe(low),street:safe(street),source:'MDS · RI Social / SAGICAD'};
+}
+async function getBudget(m){
+  let items=[],year=null,reference='';
+  for(const y of [2025,2024,2023,2022,2021]){
+    try{const u=new URL('https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca');u.searchParams.set('an_exercicio',y);u.searchParams.set('no_anexo','DCA-Anexo I-E');u.searchParams.set('id_ente',m.ibge);const d=await fetchJson(u,30000);if(Array.isArray(d?.items)&&d.items.length){items=d.items;year=y;reference=\`DCA \${y} · despesas liquidadas\`;break}}catch{}
+  }
+  if(!items.length)throw new Error('SICONFI sem DCA encontrado');
+  const fnValues=[];for(let i=1;i<=99;i++){const v=dcaValue(items,String(i).padStart(2,'0'));if(finite(v))fnValues.push(Number(v))}
+  const total=fnValues.length?fnValues.reduce((a,b)=>a+b,0):NaN;
+  const assist=dcaValue(items,'08'),health=dcaValue(items,'10'),education=dcaValue(items,'12'),sub=c=>dcaValue(items,c),sum=(...v)=>{const a=v.filter(finite);return a.length?a.reduce((x,y)=>x+Number(y),0):NaN};
+  const env=['18.541','18.542','18.543','18.544'].map(sub).filter(finite);
+  return {year,reference,total:safe(total),assist:safe(assist),health:safe(health),education:safe(education),child:safe(sub('08.243')),elderly:safe(sub('08.241')),community:safe(sub('08.244')),work:safe(sum(sub('11.333'),sub('11.334'))),qualification:safe(sum(sub('12.363'),sub('11.333'))),apprentice:safe(sum(sub('12.363'),sub('11.333'))),digital:safe(sub('04.126')),care:safe(sum(sub('08.241'),sub('08.244'))),environment:safe(env.length?env.reduce((a,b)=>a+b,0):NaN),entrepreneur:safe(sum(sub('11.334'),sub('23.691'))),source:'SICONFI / Tesouro Nacional'};
+}
+
 async function settled(name, fn, label) {
   try {
     const data=await fn();
@@ -624,7 +915,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.1.0',
+        version:'1.2.0',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}'],
         time:new Date().toISOString()
       });
@@ -639,7 +930,7 @@ const server=http.createServer(async (req,res) => {
     const hit=cache.get(key);
     let bundle;
 
-    if (hit && Date.now()-hit.at<CACHE_TTL) bundle=hit.value;
+    if (hit && Date.now()-hit.at<CACHE_TTL && u.searchParams.get('refresh')!=='1') bundle=hit.value;
     else {
       bundle=await diagnostic(m);
       cache.set(key,{at:Date.now(),value:bundle});
