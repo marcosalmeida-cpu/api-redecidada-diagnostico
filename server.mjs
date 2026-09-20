@@ -1171,7 +1171,7 @@ const server=http.createServer(async (req,res) => {
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
         version:'1.4.0',
-        endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}'],
+        endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}','/api/educacao/{codigoIBGE}','/api/suas/{codigoIBGE}','/api/orcamento/{codigoIBGE}','/api/aprendizagem/{codigoIBGE}','/api/emendas/{codigoIBGE}','/api/vulnerabilidade/{codigoIBGE}'],
         time:new Date().toISOString()
       });
     }
