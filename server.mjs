@@ -88,6 +88,22 @@ async function liveCadunico(m){
   const snap=await snapshot('cadunico',m.ibge);if(snap)return snap;
   const code6=String(m.ibge).slice(0,6);
   try{const url='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=m&codigo='+code6;const html=await fetchText(url,9000);const text=stripHtml(html);if(m.nome&&!clean(text).includes(clean(m.nome)))throw new Error('município divergente');const series=htmlTables(html).map(latestSeries).filter(Boolean);const poverty=series[0]||null,low=series[1]||null,above=series[2]||null;const ref=[poverty,low,above].filter(Boolean).sort((a,b)=>b.key-a.key)[0]||null;const families=(low&&above&&low.key===above.key)?low.value+above.value:null;if([families,low?.value,poverty?.value].some(finite))return {families:safe(families),lowIncomeFamilies:safe(low?.value),povertyFamilies:safe(poverty?.value),aboveHalfFamilies:safe(above?.value),people:null,street:null,reference:ref?(String(ref.month).padStart(2,'0')+'/'+ref.year):'',source:'MDS · VIS DATA 3'}}catch{}
+  try{
+    const urls=[
+      'https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo='+m.ibge,
+      'https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo='+String(m.ibge).slice(0,6)
+    ];
+    for(const url of urls){
+      try{
+        const text=stripHtml(await fetchText(url,8000));
+        const pick=(rxs)=>{for(const rx of rxs){const mm=text.match(rx);if(mm){const v=num(mm[1]);if(finite(v))return Number(v)}}return null};
+        const families=pick([/(\d[\d\.]{1,})\s*fam[ií]lias[^.]{0,100}cadastro [uú]nico/i,/fam[ií]lias[^\d]{0,120}(\d[\d\.]{1,})/i]);
+        const people=pick([/(\d[\d\.]{1,})\s*pessoas[^.]{0,100}cadastro [uú]nico/i,/pessoas[^\d]{0,120}(\d[\d\.]{1,})/i]);
+        const low=pick([/(\d[\d\.]{1,})\s*(?:fam[ií]lias|pessoas)[^.]{0,120}baixa renda/i,/baixa renda[^\d]{0,120}(\d[\d\.]{1,})/i]);
+        if([families,people,low].some(finite))return {families:safe(families),people:safe(people),lowIncomeFamilies:safe(low),povertyFamilies:null,street:null,reference:'',source:'MDS · RI Social'};
+      }catch{}
+    }
+  }catch{}
   return null;
 }
 async function liveVulnerability(m){const cad=await liveCadunico(m),iv=await snapshot('ivcad',m.ibge);if(cad||iv)return result('vulnerabilidade',cad?(iv?'ok':'partial'):'partial',{cadunico:cad||null,ivcad:iv||null},'MDS · Cadastro Único / IVCAD',cad?'Cadastro Único consultado automaticamente.':'IVCAD disponível sem Cadastro Único.',cad?.reference||iv?.reference||'');return result('vulnerabilidade','bad',{cadunico:null,ivcad:null},'MDS · Cadastro Único / IVCAD','Cadastro Único não respondeu e não há snapshot local. IVCAD não bloqueia os demais módulos.','')}
@@ -189,13 +205,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.1.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.1.1',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.1.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.1.1',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
