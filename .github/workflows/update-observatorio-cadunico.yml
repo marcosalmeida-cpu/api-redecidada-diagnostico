@@ -1,0 +1,58 @@
+name: Atualizar Observatorio CadUnico
+on:
+  schedule:
+    - cron: "17 7 8 * *"
+  workflow_dispatch:
+    inputs:
+      uf:
+        description: "UF especifica (opcional; deixe vazio para todas)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        uf: [AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO]
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.uf == '' || inputs.uf == matrix.uf }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install playwright
+      - run: python -m playwright install --with-deps chromium
+      - name: Extrair UF
+        run: python scripts/update_observatorio_cadunico.py --uf "${{ matrix.uf }}" --output "data/snapshots/observatorio/${{ matrix.uf }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observatorio-${{ matrix.uf }}
+          path: data/snapshots/observatorio/${{ matrix.uf }}.json
+          if-no-files-found: error
+          retention-days: 2
+
+  commit:
+    needs: collect
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: observatorio-*
+          path: data/snapshots/observatorio
+          merge-multiple: true
+      - name: Commit snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/snapshots/observatorio
+          git diff --cached --quiet || git commit -m "Atualiza snapshots do Observatorio do Cadastro Unico"
+          git push
