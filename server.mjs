@@ -916,12 +916,19 @@ async function cadunicoVisData(m){
     if(m.nome&&!clean(text).includes(clean(m.nome)))return null;
 
     const tables=visSeriesTables(html);
+    const metric=(rx)=>{
+      const t=tables.find(rows=>rx.test(clean((rows||[]).flat().join(' '))));
+      return t?latestSeriesFromRows(t):null;
+    };
+    const poverty=metric(/situacao de pobreza|pobreza segundo a faixa/);
+    const upHalf=metric(/ate meio salario|minimo pobreza baixa renda/);
+    const above=metric(/acima de meio salario/);
     const series=tables.map(latestSeriesFromRows).filter(Boolean);
-    const poverty=series[0]||null;
-    const upHalf=series[1]||null;
-    const above=series[2]||null;
-    const ref=[poverty,upHalf,above].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
-    const families=(upHalf&&above&&upHalf.key===above.key)?upHalf.value+above.value:null;
+    const p=poverty||series[0]||null;
+    const u=upHalf||series[1]||null;
+    const a=above||series[2]||null;
+    const ref=[p,u,a].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
+    const families=(u&&a&&u.key===a.key)?u.value+a.value:null;
 
     const peopleToken='oNOclsLerpibuKep3bV%2Bgmhj05Kv3KavyuDAsLjEsao%3D';
     const peopleUrl='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D='+peopleToken+'&ag=m&codigo='+code6;
@@ -931,16 +938,16 @@ async function cadunicoVisData(m){
     const streetUrl='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D='+streetToken+'&ag=m&codigo='+code6;
     const streetSeries=await visLatestSingleV142(streetUrl,m);
 
-    if(![families,peopleSeries?.value,upHalf?.value,poverty?.value,streetSeries?.value].some(finite))return null;
+    if(![families,peopleSeries?.value,u?.value,p?.value,streetSeries?.value].some(finite))return null;
 
     return {
       families:safe(families),
       people:safe(peopleSeries?.value),
-      lowIncome:safe(upHalf?.value),
-      lowIncomeFamilies:safe(upHalf?.value),
-      poverty:safe(poverty?.value),
-      povertyFamilies:safe(poverty?.value),
-      aboveHalfFamilies:safe(above?.value),
+      lowIncome:safe(u?.value),
+      lowIncomeFamilies:safe(u?.value),
+      poverty:safe(p?.value),
+      povertyFamilies:safe(p?.value),
+      aboveHalfFamilies:safe(a?.value),
       street:safe(streetSeries?.value),
       streetUnit:'famílias',
       source:'MDS · VIS DATA 3 / Cadastro Único',
