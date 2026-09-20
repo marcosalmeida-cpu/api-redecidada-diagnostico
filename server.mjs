@@ -614,7 +614,7 @@ function parseRmaUnitPage(html){
 }
 async function rmaMunicipalIndex(m){
   const code6=String(m.ibge).slice(0,6);
-  const url=\`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_unidade.php?p_ibge=\${code6}\`;
+  const url=`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_unidade.php?p_ibge=${code6}`;
   const html=await fetchText(url,25000);
   const types={cras:new Set(),creas:new Set(),pop:new Set()};
 
@@ -650,13 +650,13 @@ async function rmaMunicipalIndex(m){
 }
 async function rmaUnitSeries(type,id){
   const url=type==='cras'
-    ? \`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_cras_unidade.php?p_id_cras=\${id}\`
+    ? `https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_cras_unidade.php?p_id_cras=${id}`
     : type==='creas'
-    ? \`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_creas_unidade.php?p_id_creas=\${id}\`
-    : \`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_centropop_unidade.php?p_id_unidade=\${id}\`;
+    ? `https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_creas_unidade.php?p_id_creas=${id}`
+    : `https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_centropop_unidade.php?p_id_unidade=${id}`;
   const html=await fetchText(url,25000);
   const series=parseRmaUnitPage(html);
-  if(!series.length)throw new Error(\`RMA \${type}: unidade \${id} sem tabela legível\`);
+  if(!series.length)throw new Error(`RMA ${type}: unidade ${id} sem tabela legível`);
   return {id,url,series};
 }
 function chooseRmaPeriod(units){
@@ -712,7 +712,7 @@ getMse=async function(m){
   if(!units.length)throw new Error('RMA CREAS: nenhuma unidade respondeu');
   const p=chooseRmaPeriod(units); if(!p)throw new Error('RMA CREAS sem competência legível');
   const a=aggregateRma(units,p.key,['j1','j2','j3','j4','j5','j6']);
-  return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.creas.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.creas.length,trend:rmaTrend(units,'j1',6),source:'MDS · RMA CREAS (consulta pública por unidade)',reference:\`\${String(p.month).padStart(2,'0')}/\${p.year}\`};
+  return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.creas.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.creas.length,trend:rmaTrend(units,'j1',6),source:'MDS · RMA CREAS (consulta pública por unidade)',reference:`${String(p.month).padStart(2,'0')}/${p.year}`};
 }
 getPopRua=async function(m){
   const idx=await rmaMunicipalIndex(m);
@@ -722,7 +722,7 @@ getPopRua=async function(m){
   if(!units.length)throw new Error('RMA Centro POP: nenhuma unidade respondeu');
   const p=chooseRmaPeriod(units); if(!p)throw new Error('RMA Centro POP sem competência legível');
   const a=aggregateRma(units,p.key,['a1','c1','c2','d1','e1','f1']);
-  return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.pop.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.pop.length,trend:rmaTrend(units,'a1',6),source:'MDS · RMA Centro POP (consulta pública por unidade)',reference:\`\${String(p.month).padStart(2,'0')}/\${p.year}\`};
+  return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.pop.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.pop.length,trend:rmaTrend(units,'a1',6),source:'MDS · RMA Centro POP (consulta pública por unidade)',reference:`${String(p.month).padStart(2,'0')}/${p.year}`};
 }
 getSuas=async function(m){
   const idx=await rmaMunicipalIndex(m);
@@ -745,7 +745,7 @@ function labeledYear(text,labelRx){
 async function ibgeCityEducation(m){
   if(!m.uf||!m.nome)return null;
   try{
-    const url=\`https://www.ibge.gov.br/cidades-e-estados/\${String(m.uf).toLowerCase()}/\${slugifyPt(m.nome)}\`;
+    const url=`https://www.ibge.gov.br/cidades-e-estados/${String(m.uf).toLowerCase()}/${slugifyPt(m.nome)}`;
     const text=plainPageText(await fetchText(url,25000));
     const rFund=/Matr[ií]culas no ensino fundamental/i,rTeach=/Docentes no ensino fundamental/i,rSchool=/N[uú]mero de estabelecimentos de ensino fundamental/i;
     const rIni=/IDEB\s*[–-]\s*Anos iniciais do ensino fundamental/i,rFin=/IDEB\s*[–-]\s*Anos finais do ensino fundamental/i;
@@ -771,8 +771,8 @@ async function ipsMunicipalRow(m){
   if(ipsCacheV12.has(m.ibge))return ipsCacheV12.get(m.ibge);
   const stateCode=String(m.ibge).slice(0,2);
   const urls=[
-    \`https://ipsbrasil.org.br/blog/explore/dados/download?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=\${stateCode}\`,
-    \`https://ipsbrasil.org.br/pt/explore/dados?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=\${stateCode}\`
+    `https://ipsbrasil.org.br/blog/explore/dados/download?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=${stateCode}`,
+    `https://ipsbrasil.org.br/pt/explore/dados?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=${stateCode}`
   ];
   for(const u of urls){
     try{const row=tableObjectFromHtml(await fetchText(u,30000),m.ibge);if(row){ipsCacheV12.set(m.ibge,row);return row}}catch{}
@@ -849,7 +849,7 @@ function latestSeriesValue(text,labelRx){
 async function cadunicoVisData(m){
   try{
     const uf=String(m.ibge).slice(0,2),code6=String(m.ibge).slice(0,6);
-    const url=\`https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=e&sag=\${uf}&codigo=\${code6}\`;
+    const url=`https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=e&sag=${uf}&codigo=${code6}`;
     const text=plainPageText(await fetchText(url,30000));
     if(m.nome && !clean(text).includes(clean(m.nome)))return null;
     const poverty=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único em situação de pobreza[^]*?Referência\s*\|/i);
@@ -858,18 +858,18 @@ async function cadunicoVisData(m){
     const ref=[poverty,low,above].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
     const families=(low&&above&&low.key===above.key)?low.value+above.value:null;
     if(!finite(families)&&!finite(low?.value)&&!finite(poverty?.value))return null;
-    return {families:safe(families),people:null,lowIncome:safe(low?.value),poverty:safe(poverty?.value),street:null,source:'MDS · VIS DATA 3 / Cadastro Único',reference:ref?\`\${String(ref.month).padStart(2,'0')}/\${ref.year}\`:''};
+    return {families:safe(families),people:null,lowIncome:safe(low?.value),poverty:safe(poverty?.value),street:null,source:'MDS · VIS DATA 3 / Cadastro Único',reference:ref?`${String(ref.month).padStart(2,'0')}/${ref.year}`:''};
   }catch{return null}
 }
 getCadunico=async function(m){
   const urls=[];
   for(const code of [m.ibge,m.ibge.slice(0,6)]){
-    urls.push(\`https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo=\${code}\`);
-    urls.push(\`https://aplicacoes.cidadania.gov.br/ri/ri/relatorios/cidadania/?codigo=\${code}\`);
+    urls.push(`https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo=${code}`);
+    urls.push(`https://aplicacoes.cidadania.gov.br/ri/ri/relatorios/cidadania/?codigo=${code}`);
   }
   let text='';
   for(const raw of urls){
-    for(const u of [raw,\`https://r.jina.ai/\${raw}\`]){
+    for(const u of [raw,`https://r.jina.ai/${raw}`]){
       try{const t=await fetchText(u,22000);if(t&&t.length>1800){text=t;break}}catch{}
     }
     if(text)break;
@@ -885,7 +885,7 @@ getCadunico=async function(m){
 getBudget=async function(m){
   let items=[],year=null,reference='';
   for(const y of [2025,2024,2023,2022,2021]){
-    try{const u=new URL('https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca');u.searchParams.set('an_exercicio',y);u.searchParams.set('no_anexo','DCA-Anexo I-E');u.searchParams.set('id_ente',m.ibge);const d=await fetchJson(u,30000);if(Array.isArray(d?.items)&&d.items.length){items=d.items;year=y;reference=\`DCA \${y} · despesas liquidadas\`;break}}catch{}
+    try{const u=new URL('https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca');u.searchParams.set('an_exercicio',y);u.searchParams.set('no_anexo','DCA-Anexo I-E');u.searchParams.set('id_ente',m.ibge);const d=await fetchJson(u,30000);if(Array.isArray(d?.items)&&d.items.length){items=d.items;year=y;reference=`DCA ${y} · despesas liquidadas`;break}}catch{}
   }
   if(!items.length)throw new Error('SICONFI sem DCA encontrado');
   const fnValues=[];for(let i=1;i<=99;i++){const v=dcaValue(items,String(i).padStart(2,'0'));if(finite(v))fnValues.push(Number(v))}
