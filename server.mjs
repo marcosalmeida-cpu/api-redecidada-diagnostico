@@ -175,8 +175,8 @@ function latestVisRow(html,minValues=1){
       const p=periodCell(row[pi]);
       const values=[];
       for(let i=pi+1;i<row.length;i++){
-        const v=num(row[i]);
-        if(finite(v))values.push(Number(v));
+        const v=visNum(row[i]);
+        if(Number.isFinite(v))values.push(Number(v));
       }
       if(values.length>=minValues)found.push({...p,values,row});
     }
@@ -260,7 +260,7 @@ function htmlTagValues(block,tag='h5'){
     .filter(Number.isFinite);
 }
 function cecadBlocks(html){
-  const hits=[...String(html||'').matchAll(/<div\\b[^>]*id=["'](dados-cadastro-[^"']+)["'][^>]*>/gi)],out=[];
+  const hits=[...String(html||'').matchAll(/<div\b[^>]*id=["'](dados-cadastro-[^"']+)["'][^>]*>/gi)],out=[];
   for(let i=0;i<hits.length;i++){
     const start=(hits[i].index||0),end=i+1<hits.length?(hits[i+1].index||html.length):html.length;
     const raw=html.slice(start,end),text=stripHtml(raw),values=htmlTagValues(raw,'h5');
@@ -273,7 +273,7 @@ function cecadMetric(blocks,rx,index=0){
   return b&&Number.isFinite(b.values?.[index])?Number(b.values[index]):null;
 }
 function cecadReference(blocks){
-  for(const b of blocks||[]){const m=String(b.text||'').match(/(0?[1-9]|1[0-2])\\/(20\\d{2})/);if(m)return String(m[1]).padStart(2,'0')+'/'+m[2]}
+  for(const b of blocks||[]){const m=String(b.text||'').match(/(0?[1-9]|1[0-2])\/(20\d{2})/);if(m)return String(m[1]).padStart(2,'0')+'/'+m[2]}
   return '';
 }
 async function cecadSummary(m){
@@ -286,15 +286,15 @@ async function cecadSummary(m){
     out.families=safe(cecadMetric(blocks,/familias cadastradas(?!.*pobreza|.*baixa renda)/));
     out.povertyFamilies=safe(cecadMetric(blocks,/situacao de pobreza/));
     out.lowIncomeFamilies=safe(cecadMetric(blocks,/baixa renda/));
-    out.aboveHalfFamilies=safe(cecadMetric(blocks,/acima de (?:1\\/2|meio).*salario/));
+    out.aboveHalfFamilies=safe(cecadMetric(blocks,/acima de (?:1\/2|meio).*salario/));
     if(!finite(out.families)){
-      const text=stripHtml(html).replace(/(0?[1-9]|1[0-2])\\/(20\\d{2})/g,' ');
-      const m1=text.match(/Fam[ií]lias Cadastradas[^0-9]{0,120}(\\d{1,3}(?:\\.\\d{3})+|\\d+)/i);
+      const text=stripHtml(html).replace(/(0?[1-9]|1[0-2])\/(20\d{2})/g,' ');
+      const m1=text.match(/Fam[ií]lias Cadastradas[^0-9]{0,120}(\d{1,3}(?:\.\d{3})+|\d+)/i);
       if(m1)out.families=safe(visNum(m1[1]));
     }
     if(!finite(out.povertyFamilies)){
       const text=stripHtml(html);
-      const m2=text.match(/Fam[ií]lias[^.]{0,100}situa[cç][aã]o de Pobreza[^0-9]{0,100}(\\d{1,3}(?:\\.\\d{3})+|\\d+)/i);
+      const m2=text.match(/Fam[ií]lias[^.]{0,100}situa[cç][aã]o de Pobreza[^0-9]{0,100}(\d{1,3}(?:\.\d{3})+|\d+)/i);
       if(m2)out.povertyFamilies=safe(visNum(m2[1]));
     }
     return [out.families,out.povertyFamilies,out.lowIncomeFamilies,out.aboveHalfFamilies].some(finite)?out:null;
