@@ -820,14 +820,26 @@ function ivcadNorm(v){
   return n>=0&&n<=1?n:NaN;
 }
 getIvcad=async function(m){
-  const local=await localIvcad(m);if(local&&finite(local.general))return local;
+  const local=await localIvcad(m);
+  if(local&&finite(local.general))return {...local,available:true};
+
   const template=String(process.env.IVCAD_JSON_URL_TEMPLATE||'').trim();
-  if(template){try{const x=normalizeIvcad(await fetchJson(template.replace('{ibge}',encodeURIComponent(m.ibge)),24000));if(x)return x}catch{}}
-  try{
-    const row=await ipsMunicipalRow(m),v=ivcadNorm(rowVal(row,/indice de vulnerabilidade das familias do cadastro unico|ivcad/));
-    if(finite(v))return {general:Number(v),dims:{NC:null,DPI:null,DCA:null,TQA:null,DR:null,CH:null},indicators:{},source:'IPS Brasil 2025 · fonte original Cadastro Único/MDS',reference:'2025'};
-  }catch{}
-  throw new Error('IVCAD geral não localizado em fonte estruturada; dimensões permanecem disponíveis no painel oficial do MDS');
+  if(template){
+    try{
+      const x=normalizeIvcad(await fetchJson(template.replace('{ibge}',encodeURIComponent(m.ibge)),10000));
+      if(x)return {...x,available:true};
+    }catch{}
+  }
+
+  return {
+    general:null,
+    dims:{NC:null,DPI:null,DCA:null,TQA:null,DR:null,CH:null},
+    indicators:{},
+    available:false,
+    source:'MDS · Observatório do Cadastro Único / IVCAD',
+    reference:'',
+    officialUrl:'https://paineis.cidadania.gov.br/public/extensions/observatorio-do-cadastro-unico/index.html'
+  };
 }
 async function latestSebraeYear(cube){
   try{
@@ -870,53 +882,96 @@ getEducation=async function(m){
 function latestSeriesFromRows(rows){
   const out=[];
   for(const row of rows||[]){
-    const p=periodKey(row?.[0]);if(!p)continue;
-    const v=num(row?.[1]);if(finite(v))out.push({...p,value:Number(v)});
+    const pi=(row||[]).findIndex(cell=>periodKey(cell));
+    if(pi<0)continue;
+    const p=periodKey(row[pi]);if(!p)continue;
+    let value=NaN;
+    for(let i=pi+1;i<row.length;i++){
+      const v=num(row[i]);if(finite(v)){value=Number(v);break}
+    }
+    if(finite(value))out.push({...p,value:Number(value)});
   }
-  out.sort((a,b)=>b.key-a.key);return out[0]||null;
+  out.sort((x,y)=>y.key-x.key);return out[0]||null;
 }
 function visSeriesTables(html){
-  return parseDocumentTables(html).filter(rows=>rows.some(r=>periodKey(r?.[0])) && rows.some(r=>r.some(x=>/refer[eê]ncia/i.test(clean(x)))));
+  return parseDocumentTables(html).filter(rows=>
+    rows.some(r=>(r||[]).some(cell=>periodKey(cell))) &&
+    rows.some(r=>(r||[]).some(x=>/refer[eê]ncia/i.test(clean(x))))
+  );
+}
+async function visLatestSingleV142(url,m){
+  try{
+    const html=await fetchTextPublic(url,25000),text=stripHtml(html);
+    if(m.nome&&!clean(text).includes(clean(m.nome)))return null;
+    const tables=visSeriesTables(html);
+    const candidates=tables.map(latestSeriesFromRows).filter(Boolean).sort((x,y)=>y.key-x.key);
+    return candidates[0]||null;
+  }catch{return null}
 }
 async function cadunicoVisData(m){
   try{
-    const uf=String(m.ibge).slice(0,2),code6=String(m.ibge).slice(0,6);
-    const url=`https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=e&sag=${uf}&codigo=${code6}`;
-    const html=await fetchTextPublic(url,30000),text=stripHtml(html);
-    if(m.nome && !clean(text).includes(clean(m.nome)))return null;
+    const code6=String(m.ibge).slice(0,6);
+    const familyUrl='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=m&codigo='+code6;
+    const html=await fetchTextPublic(familyUrl,30000),text=stripHtml(html);
+    if(m.nome&&!clean(text).includes(clean(m.nome)))return null;
 
-    // Nesta visualização, as três primeiras séries são:
-    // pobreza; até 1/2 salário mínimo; acima de 1/2 salário mínimo.
     const tables=visSeriesTables(html);
-    const poverty=latestSeriesFromRows(tables[0]||[]);
-    const low=latestSeriesFromRows(tables[1]||[]);
-    const above=latestSeriesFromRows(tables[2]||[]);
-    const ref=[poverty,low,above].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
-    const families=(low&&above&&low.key===above.key)?low.value+above.value:null;
-    if(!finite(families)&&!finite(low?.value)&&!finite(poverty?.value))return null;
-    return {families:safe(families),people:null,lowIncome:safe(low?.value),poverty:safe(poverty?.value),street:null,source:'MDS · VIS DATA 3 / Cadastro Único',reference:ref?`${String(ref.month).padStart(2,'0')}/${ref.year}`:''};
+    const series=tables.map(latestSeriesFromRows).filter(Boolean);
+    const poverty=series[0]||null;
+    const upHalf=series[1]||null;
+    const above=series[2]||null;
+    const ref=[poverty,upHalf,above].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
+    const families=(upHalf&&above&&upHalf.key===above.key)?upHalf.value+above.value:null;
+
+    const peopleToken='oNOclsLerpibuKep3bV%2Bgmhj05Kv3KavyuDAsLjEsao%3D';
+    const peopleUrl='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D='+peopleToken+'&ag=m&codigo='+code6;
+    const peopleSeries=await visLatestSingleV142(peopleUrl,m);
+
+    const streetToken='oNOclsLerpibuKep3bV%2Bfmhj05Kv2rmg2a19ZW51ZXKmaX6JaV2JlmCbbWCNrMmTbXuUoNqmrMGpjLrCl6WjlMnusm%2BiqaGt3nSItJiZysZupbCoyveho7CpoVrdnm20mJoaDp%2FTnqZ94LpUr7Gpr9r89BHanHfFmIqvqL6btqKvq6ej7ZrAbqWcd6SUzp6m0e28VP%2Fio6PcqMm%2BcqnT3W4%3D';
+    const streetUrl='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D='+streetToken+'&ag=m&codigo='+code6;
+    const streetSeries=await visLatestSingleV142(streetUrl,m);
+
+    if(![families,peopleSeries?.value,upHalf?.value,poverty?.value,streetSeries?.value].some(finite))return null;
+
+    return {
+      families:safe(families),
+      people:safe(peopleSeries?.value),
+      lowIncome:safe(upHalf?.value),
+      lowIncomeFamilies:safe(upHalf?.value),
+      poverty:safe(poverty?.value),
+      povertyFamilies:safe(poverty?.value),
+      aboveHalfFamilies:safe(above?.value),
+      street:safe(streetSeries?.value),
+      streetUnit:'famílias',
+      source:'MDS · VIS DATA 3 / Cadastro Único',
+      reference:ref?(String(ref.month).padStart(2,'0')+'/'+ref.year):'',
+      methodology:'Famílias totais = famílias com renda per capita até 1/2 salário mínimo + famílias acima de 1/2 salário mínimo. Pobreza é apresentada separadamente.'
+    };
   }catch{return null}
 }
 getCadunico=async function(m){
+  const vis=await cadunicoVisData(m);
+  if(vis)return vis;
+
   const urls=[];
   for(const code of [m.ibge,m.ibge.slice(0,6)]){
-    urls.push(`https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo=${code}`);
-    urls.push(`https://aplicacoes.cidadania.gov.br/ri/ri/relatorios/cidadania/?codigo=${code}`);
+    urls.push('https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo='+code);
+    urls.push('https://aplicacoes.cidadania.gov.br/ri/ri/relatorios/cidadania/?codigo='+code);
   }
   let text='';
   for(const raw of urls){
-    for(const u of [raw,`https://r.jina.ai/${raw}`]){
-      try{const t=await fetchText(u,22000);if(t&&t.length>1800){text=t;break}}catch{}
+    for(const u of [raw,'https://r.jina.ai/'+raw]){
+      try{const t=await fetchText(u,12000);if(t&&t.length>1800){text=t;break}}catch{}
     }
     if(text)break;
   }
-  if(!text){const vis=await cadunicoVisData(m);if(vis)return vis;throw new Error('Cadastro Único: fonte municipal sem leitura automática');}
+  if(!text)throw new Error('Cadastro Único: VIS DATA e contingência RI Social sem retorno');
   const families=findTextNumber(text,[/(?:fam[ií]lias)[^\d]{0,120}(?:cadastrad|inscrit)[^\d]{0,40}([\d\.]+)/i,/([\d\.]+)\s*fam[ií]lias[^\n]{0,100}cadastro [uú]nico/i]);
   const people=findTextNumber(text,[/(?:pessoas)[^\d]{0,120}(?:cadastrad|inscrit)[^\d]{0,40}([\d\.]+)/i,/([\d\.]+)\s*pessoas[^\n]{0,100}cadastro [uú]nico/i]);
   const low=findTextNumber(text,[/(?:baixa renda|pobreza)[^\d]{0,120}([\d\.]+)\s*(?:fam[ií]lias|pessoas)/i,/([\d\.]+)\s*(?:fam[ií]lias|pessoas)[^\n]{0,120}(?:baixa renda|pobreza)/i]);
   const street=findTextNumber(text,[/(?:situa[cç][aã]o de rua)[^\d]{0,120}([\d\.]+)\s*(?:pessoas|fam[ií]lias)/i,/([\d\.]+)\s*(?:pessoas|fam[ií]lias)[^\n]{0,120}(?:situa[cç][aã]o de rua)/i]);
-  if(![families,people,low,street].some(finite)){const vis=await cadunicoVisData(m);if(vis)return vis;throw new Error('Cadastro Único: página respondeu, mas sem indicadores estruturados');}
-  return {families:safe(families),people:safe(people),lowIncome:safe(low),street:safe(street),source:'MDS · RI Social / SAGICAD'};
+  if(![families,people,low,street].some(finite))throw new Error('Cadastro Único: fonte respondeu sem indicadores estruturados');
+  return {families:safe(families),people:safe(people),lowIncome:safe(low),street:safe(street),source:'MDS · RI Social / SAGICAD',reference:''};
 }
 getBudget=async function(m){
   let items=[],year=null,reference='';
@@ -1120,13 +1175,13 @@ async function diagnostic(m) {
 
   if (data.ivcad && Object.values(data.ivcad.dims||{}).filter(finite).length<6) {
     sources.ivcad.status='partial';
-    sources.ivcad.message='Índice geral disponível; as seis dimensões dependem de fonte estruturada do Observatório ou conector próprio.';
+    sources.ivcad.message=data.ivcad?.available?'Índice geral disponível; as seis dimensões dependem de fonte estruturada oficial.':'IVCAD não automatizado nesta consulta; os demais blocos do diagnóstico seguem normalmente.';
   }
   if (data.education && !finite(data.education.enrollments) && !finite(data.education.idebInitial)) {
     sources.education.status='partial';
     sources.education.message='Apenas parte dos indicadores educacionais respondeu.';
   }
-  if (data.cadunico && (!finite(data.cadunico.families) || !finite(data.cadunico.people) || !finite(data.cadunico.street))) {
+  if (data.cadunico && (!finite(data.cadunico.families) || !finite(data.cadunico.people))) {
     sources.cadunico.status='partial';
     sources.cadunico.message='Cadastro Único carregado parcialmente; alguns recortes não estão expostos na fonte municipal aberta utilizada.';
   }
@@ -1142,7 +1197,7 @@ async function diagnostic(m) {
   const analysis=buildAnalysisV14(data,m);
   return {
     ok:true,
-    version:'1.4.1',
+    version:'1.4.2',
     municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},
     generatedAt:new Date().toISOString(),
     cacheTtlSeconds:CACHE_TTL/1000,
@@ -1170,7 +1225,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.4.1',
+        version:'1.4.2',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}','/api/educacao/{codigoIBGE}','/api/suas/{codigoIBGE}','/api/orcamento/{codigoIBGE}','/api/aprendizagem/{codigoIBGE}','/api/emendas/{codigoIBGE}','/api/vulnerabilidade/{codigoIBGE}'],
         time:new Date().toISOString()
       });
