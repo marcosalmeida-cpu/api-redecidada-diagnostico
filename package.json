@@ -1,6 +1,6 @@
 {
   "name": "diagnostico-territorial-rede-cidada",
-  "version": "1.4.2",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,8 +8,7 @@
     "check": "node --check server.mjs"
   },
   "dependencies": {
-    "xlsx": "^0.18.5",
-    "adm-zip": "^0.5.16"
+    "xlsx": "^0.18.5"
   },
   "engines": {
     "node": ">=20"
