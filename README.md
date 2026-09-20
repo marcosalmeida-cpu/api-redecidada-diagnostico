@@ -1,70 +1,68 @@
 # API Diagnóstico Territorial — Rede Cidadã
 
-API intermediária do hotsite de diagnóstico socioterritorial da Rede Cidadã.
+API intermediária do hotsite de diagnóstico socioterritorial.
 
-## Versão atual
+## Arquitetura v2
 
-**1.4.0**
+A API principal foi redesenhada para o plano Free do Render:
 
-A API foi organizada para funcionar como camada de normalização entre fontes oficiais e o hotsite. O navegador não precisa baixar XLSX, ZIP ou consultar painéis pesados diretamente.
+- não baixa ZIP/XLSX nacionais durante a pesquisa;
+- não processa microdados pesados em memória;
+- cada tema é um módulo independente;
+- falha de um módulo não interrompe o diagnóstico;
+- fontes pesadas são convertidas periodicamente em snapshots municipais pequenos;
+- SICONFI e Transferegov permanecem como consultas estruturadas ao vivo;
+- IVCAD é complementar e nunca bloqueia os demais módulos.
 
-## Endpoint integrado
+## Endpoints
 
+- `GET /api/health`
 - `GET /api/diagnostico/{codigoIBGE}`
+- `GET /api/modulo/{modulo}/{codigoIBGE}`
 
-Exemplo:
+Para refazer uma consulta:
 
-`/api/diagnostico/3106200?nome=Belo%20Horizonte&uf=MG&refresh=1`
+`?refresh=1`
 
-O retorno inclui:
+No endpoint geral, `refresh=1` é utilizado pelo hotsite para tentar novamente módulos pendentes, parciais ou com falha.
 
-- dados consolidados por tema;
-- status individual das fontes;
-- plano de fontes;
-- síntese analítica territorial;
-- oportunidades de aprofundamento;
-- aprendizagem profissional;
-- transferências especiais/emendas quando localizadas.
+## Módulos
 
-## Rotas temáticas
+- perfil
+- vulnerabilidade
+- educacao
+- trabalho
+- aprendizagem
+- protecao
+- publicos
+- condicoes
+- capacidade
+- orcamento
+- recursos
+- ecossistema
 
-- `GET /api/ivcad/{codigoIBGE}`
-- `GET /api/educacao/{codigoIBGE}`
-- `GET /api/suas/{codigoIBGE}`
-- `GET /api/orcamento/{codigoIBGE}`
-- `GET /api/aprendizagem/{codigoIBGE}`
-- `GET /api/emendas/{codigoIBGE}`
-- `GET /api/vulnerabilidade/{codigoIBGE}`
+## Fontes
 
-## Fontes e hierarquia
+### Consultas leves/estruturadas
 
-### Demografia e território
-IBGE / SIDRA / Censo.
+- IBGE Localidades / SIDRA
+- SICONFI / Tesouro Nacional
+- Transferegov
 
-### Vulnerabilidade
-MDS / Cadastro Único / IVCAD / VIS DATA. Dados ausentes permanecem indisponíveis; não são estimados.
+### Snapshots periódicos
 
-### Educação
-IBGE Agregados + INEP, com contingências estruturadas.
+- Cadastro Único / MDS
+- IVCAD, quando houver fonte estruturada válida
+- INEP / Censo Escolar / IDEB
+- RAIS / Novo Caged
+- MTE/SIT / potencial de aprendizagem
+- Censo SUAS
+- públicos específicos IBGE/MDS
+- SINISA + indicadores selecionados do SUS
+- IBGE MUNIC
+- CNEAS
 
-### SUAS
-RMA público processado no servidor e estrutura preparada para Censo SUAS.
-
-### Trabalho e aprendizagem
-MTE/SIT, eSocial, RAIS/Novo Caged quando disponíveis. A planilha oficial de potencial municipal de aprendizagem é processada no servidor.
-
-### CNAP
-O ZIP/CSV oficial do CNAP é baixado, descompactado e filtrado pela API, eliminando a dependência de Google Sheets e CORS no hotsite.
-
-### Orçamento
-SICONFI / Tesouro Nacional.
-
-### Emendas e recursos públicos
-Transferegov — Transferências Especiais, cruzando beneficiário, plano de ação, empenhos e relatórios de gestão. Portais estaduais e municipais entram como conectores específicos quando disponibilizam fonte estruturada.
-
-## Síntese analítica
-
-O endpoint de diagnóstico devolve um bloco `analysis` com textos construídos apenas a partir dos dados efetivamente carregados. A síntese é usada no hotsite e no documento PDF.
+Os snapshots ficam em `data/snapshots/*.json` e usam o código IBGE de 7 dígitos como chave.
 
 ## Render
 
@@ -74,4 +72,4 @@ O endpoint de diagnóstico devolve um bloco `analysis` com textos construídos a
 - Health Check Path: `/api/health`
 - Root Directory: vazio
 
-O servidor usa `process.env.PORT`, CORS aberto para o hotsite e cache territorial.
+A API não possui dependências de processamento pesado no runtime.
