@@ -69,6 +69,31 @@ async function liveProfile(m){
   try{const d=await ibgeData(6579,'-1','9324',m);const r=aggFlat(d).filter(x=>finite(x.value)).sort((a,b)=>String(b.period).localeCompare(String(a.period)))[0];if(r){out.population=Number(r.value);out.populationEstimate=Number(r.value);refs.push('estimativa '+r.period)}}catch{}
   try{const d=await ibgeData(4714,2022,'93|6318|614',m);const rows=aggFlat(d).filter(x=>finite(x.value));for(const x of rows){if(String(x.variableId)==='93')out.populationCensus=Number(x.value);if(String(x.variableId)==='6318')out.area=Number(x.value);if(String(x.variableId)==='614')out.density=Number(x.value)}refs.push('Censo 2022')}catch{}
   try{const meta=await ibgeMeta(9514);const d=await ibgeData(9514,2022,'93',m,classQuery(meta,[/idade|grupo de idade/]));const rows=aggFlat(d).filter(x=>finite(x.value));const groups={};for(const x of rows){const lab=(x.labels||[]).find(a=>/anos|100/i.test(String(a)));if(lab)groups[lab]=Math.max(groups[lab]||0,Number(x.value))}const vals=Object.entries(groups).map(([label,value])=>({label,value}));out.ageGroups=vals;out.youth15_29=vals.filter(x=>/15 a 19|20 a 24|25 a 29/i.test(x.label)).reduce((s,x)=>s+x.value,0)||null;out.older60=vals.filter(x=>/60 a|65 a|70 a|75 a|80 a|85 a|90 a|95 a|100/i.test(x.label)).reduce((s,x)=>s+x.value,0)||null}catch{}
+  try{
+    const meta=await ibgeMeta(9605);
+    const d=await ibgeData(9605,2022,'all',m,classQuery(meta,[/cor ou raca/]));
+    const rows=aggFlat(d).filter(x=>finite(x.value));
+    const wanted=['Branca','Preta','Parda','Amarela','Indígena'];
+    const pctRows=rows.filter(x=>clean(x.variable).includes('percentual'));
+    const absRows=rows.filter(x=>!clean(x.variable).includes('percentual'));
+    out.race=wanted.map(label=>{
+      const p=pctRows.find(x=>(x.labels||[]).some(a=>clean(a)===clean(label)));
+      const a=absRows.find(x=>(x.labels||[]).some(v=>clean(v)===clean(label)));
+      return {label,value:safe(a?.value),percent:safe(p?.value)};
+    }).filter(x=>finite(x.value)||finite(x.percent));
+  }catch{}
+  try{
+    const meta=await ibgeMeta(9514);
+    const d=await ibgeData(9514,2022,'93',m,classQuery(meta,[/sexo/]));
+    const rows=aggFlat(d).filter(x=>finite(x.value));
+    const pick=label=>rows.find(x=>(x.labels||[]).some(a=>clean(a)===clean(label)));
+    const men=pick('Homens'),women=pick('Mulheres');
+    const total=(finite(men?.value)?Number(men.value):0)+(finite(women?.value)?Number(women.value):0);
+    if(total)out.sex=[
+      {label:'Mulheres',value:safe(women?.value),percent:100*Number(women?.value||0)/total},
+      {label:'Homens',value:safe(men?.value),percent:100*Number(men?.value||0)/total}
+    ];
+  }catch{}
   if(!out.population&&out.populationCensus)out.population=out.populationCensus;
   if(!Object.keys(out).length)return result('perfil','bad',null,'IBGE · SIDRA/Censo','IBGE não respondeu nesta consulta.','');
   out.reference=[...new Set(refs)].join(' · ');return result('perfil','ok',out,'IBGE · SIDRA/Censo','Perfil territorial carregado automaticamente.',out.reference);
@@ -216,13 +241,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.2.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.3.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.2.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.3.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
