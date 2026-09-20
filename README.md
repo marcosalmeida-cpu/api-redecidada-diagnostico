@@ -45,9 +45,11 @@ No endpoint geral, `refresh=1` é utilizado pelo hotsite para tentar novamente m
 
 ### Consultas leves/estruturadas
 
-- IBGE Localidades / SIDRA
+- IBGE Localidades
 - SICONFI / Tesouro Nacional
 - Transferegov
+
+O hotsite possui contingência direta no IBGE/SIDRA para perfil e escolaridade básica enquanto os snapshots periódicos ainda não estiverem disponíveis.
 
 ### Snapshots periódicos
 
