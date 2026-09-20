@@ -17,6 +17,7 @@ const VIS_FAMILIAS_RENDA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%
 const VIS_BOLSA_FAMILIA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bV%2Bgmxl05Kv2rmg2a19ZW51ZmymaX6JaV2JlmCbb2CNrMmlsKyamembs61ojMfGpt2slLysiJqdtKiftJ%2BuuqqSkpyZy6mmwraIp7G1WKvtnbKtp4%2B9wGTJrZjQ7ryVm3pwoNqlwLNyk7jNps94bsPcuaehg3Ct7qZwv6uRvMCjzKOSjtq9ma%2B7pJvYbIi0mJnKxm7Qnp%2FQ4Ihvoqmhrd50iMGsmnrSp86iks3ds5Ntp6Wf7Ky8r5ZhkseU1rCYmOGuoK%2BtcHXfmrnBnGiS1KjXYKTR37KTrKqbmaqYvbOqoMbCkp94mb7nwJl3rpam7J6IiZ2Ow9SYpXim0uhwpbCsmpnpm7OtaIzHxqbdrJS8sYianbSon7SfrrqqkpKcmcuppsK2iKextVir7Z2yraePvcBkya2Y0O68lZt%2FcKDapcCzcpO4zabPeG7D3LmnoYNwre6mcL%2BrkbzAo8yjko7avZmvu6Sb2Kaut6qMjpyZy6mmwrazlai7mnW0n666qpKSnKbfqq%2Bu8K6isLGZm92ebbKcTb3CoC3qn8bcwFSeraOf36Kwt%2FrOycqU3V2XzJudpquvp5vmmm2QppnKwlOwnqAgKLmdnWibqeumrrKYTcfQpYpuU8bpwZmjupao7Z5tfVeixcqjz7CmzNy2p1%2BZqpvnrbaymJG8gZfPXZm%2B6BDhqLGWrZmbsryck8DEnC3epcbcwFSgt1WK66i0wJiauIF12ammvpuTlakL4qbimm20pp%2FEwpfLXaPM7W1mXLGjrt6gv6%2BlobzUVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd2yoqGunp3i%2FO7AoI7KgZfZXYPP6rSmnbWWWruoucGYTZ3CoC3qn8bcbZqruqKb3Zptvqafd5RT06unwuK%2Flaq8mq2cisKvpaHAxZTOolPB4G2anbX45%2BWirsFXj7zPmNCmlsY%2B7qalqaha3ahtnqmcvtOU155Tn%2Bq5p51oe5vm%2FPq6oI53x6LcqpTB3G2kq7pVbpmiu8KclMnCod6ipoDMwpWqvJ6e2p2ybpuSd8eU1wDgyeSup1yqmqjen7axoPD405zLsFPB6m2ErrecrNqmrm55nMPUlIqDlMo%2B%2BqClqVWg6Ku6r5uOd9Gi3F1ofeS7qKGvp5vnrbLBWn7MwqHeppe%2B37JUoK1VoNqmEPujlrjUU8yiocLhtpelC9as4prAbpucd7Gl2aSlvuiuVH63oa3aWZOvpPAEzZzLXZnM7bqVoKlVquirbYRXlsXVmNGvlMvvsqdfmaqb5622spiRvIGXz12ZvugQ4aixlq2Zm7K8nJPAxJwt3qXG3MBUoLdViuuotMCYmriBddmppr6bk5WpC%2BKm4ppttKafxMKXy12jzO1ta1yxo67eoL%2BvpaG81Fa7spTL77aYnayaWt2ebbSYmhoOn9Oepn3dsqKhrp6d4vzuwKCOyoGX2V2Dz%2Bq0pp21llq7qLnBmE2dwqAt6p%2FG3G2aq7qim92abb6mn3eZU9myU8rctqdcsaOu3qC%2Fr6WhvNSv2niv2feI';
 const VIS_PCD_CADUNICO='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWEgLNe09Gv17lljax%2FYWyAYmqqdH9%2BaWKEkWaXbWTZ6aykobuomd2es7ealrzPks2el5jhrqCvrXCg2qXAs3JovcKf3aJumO7CoV%2B2lKrerMCtm5K9ypbToqG87rKhrq2oqticrrJyk7jNps94mb7nwJl3g5ub5ayyiXKgzM6vu7KUy%2B%2B2mJ2smlrdnm2%2BnKDK0JTdXZbM6G2Yoa6eneL897yalriBnNiwls%2FkwZWvaKOpmXyuspigy9OiigDNy%2BSwo1%2BYmq3sqK7BV5DGzlPNnqDN6m2YoWient6nwbedlrrC9hEA1sybsZmisZijPOO7saCOd9SY112lwu69o6%2B8lrbpdMnKs2g%3D';
 const VIS_BPC='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=PYfnoX';
+const VIS_BPC_CADUNICO='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOhlMHqwJOsuqSe9XGEymipx92g5m9jjrR6ZG11ZWu0a32AbFqIkmCabq%2FTtIBnd66WpuyeiLSYmcrGbqWjlMnusm93u6qnnK%2BGgWtovcKf3aJuw9y5p6GDcKDapcCzcmjK1qCNs2yQsIianbSon7SfrrqqkpKcmcuppsK2iKextbF83qeytKCQwCTU3Kai0JuPhH9oo6mZfK6ymKDL06KKAM3L5LCjX4qaqN6ftrGg8PjTnNmwU5%2FLkFSqt1V92p2uwaufxoH2BKucwOptYVyYeH6ce7K8nJPAxJwt3qXG6sBUfph4WueobZGYkbjUp9ysUyAVu52ft1VnmYKxvaqc09Fu5rmvmA%3D%3D';
 
 const clean=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
@@ -249,46 +250,69 @@ async function liveConditions(m){
   const ok=[out.households,out.avgResidents,out.waterPercent,out.sewerPercent,out.wastePercent,out.apsCoverage,out.ubs,out.caps].some(finite);
   return ok?result('condicoes',snap?'ok':'partial',out,snap?'IBGE + SINISA + SUS snapshot':'IBGE · Censo 2022','Estatísticas domiciliares carregadas automaticamente; saúde e SINISA entram quando o snapshot estiver disponível.',out.reference||'Censo 2022'):result('condicoes','bad',null,'IBGE + SINISA + SUS','Condições de vida não responderam nesta consulta.','');
 }
+async function liveDisability(m){
+  try{
+    const meta=await ibgeMeta(10131);
+    const d=await ibgeData(10131,2022,'all',m,classQuery(meta,[/existencia de deficiencia/]));
+    const rows=aggFlat(d).filter(x=>finite(x.value)&&!clean(x.variable).includes('percentual'));
+    const hit=rows.find(x=>(x.labels||[]).some(a=>clean(a)==='pessoa com deficiencia'||clean(a)==='pessoas com deficiencia'));
+    return hit?Number(hit.value):null;
+  }catch{return null}
+}
 async function liveCadunico(m){
   const snap=await snapshot('cadunico',m.ibge);
   if(snap)return snap;
-  const [income,pbf,pcd,bpc]=await Promise.all([
-    visMunicipalLatest(VIS_FAMILIAS_RENDA,m,3,10000),
-    visMunicipalLatest(VIS_BOLSA_FAMILIA,m,1,10000),
-    visMunicipalLatest(VIS_PCD_CADUNICO,m,1,10000),
-    visMunicipalMetrics(VIS_BPC,m,10000)
+  const [incomeMetrics,pbfMetrics,bpcMetrics,pcdCensus]=await Promise.all([
+    visMunicipalMetrics(VIS_FAMILIAS_RENDA,m,12000),
+    visMunicipalMetrics(VIS_BOLSA_FAMILIA,m,12000),
+    visMunicipalMetrics(VIS_BPC_CADUNICO,m,12000),
+    liveDisability(m)
   ]);
-  const out={source:'MDS · VIS DATA',notes:[]};
-  if(income){
-    const poverty=income.values[0],uptoHalf=income.values[1],aboveHalf=income.values[2];
-    out.povertyFamilies=safe(poverty);
-    out.lowIncomeFamilies=safe(Math.max(0,uptoHalf-poverty));
-    out.upToHalfMinimumWageFamilies=safe(uptoHalf);
-    out.aboveHalfFamilies=safe(aboveHalf);
-    out.families=safe(uptoHalf+aboveHalf);
-    out.reference=String(income.month).padStart(2,'0')+'/'+income.year;
+  const out={source:'MDS · VIS DATA 3 beta + IBGE Censo 2022',notes:[]};
+
+  if(incomeMetrics.length){
+    const poverty=visMetric(incomeMetrics,/familias cadastradas.*situacao de pobreza|situacao de pobreza.*familias/);
+    const uptoHalf=visMetric(incomeMetrics,/ate meio salario|minimo.*pobreza.*baixa renda|pobreza \+ baixa renda/);
+    const aboveHalf=visMetric(incomeMetrics,/acima de meio salario|minimo/);
+    const latest=incomeMetrics.slice().sort((a,b)=>b.key-a.key)[0];
+    if(finite(poverty))out.povertyFamilies=safe(poverty);
+    if(finite(uptoHalf))out.upToHalfMinimumWageFamilies=safe(uptoHalf);
+    if(finite(aboveHalf))out.aboveHalfFamilies=safe(aboveHalf);
+    if(finite(uptoHalf)&&finite(poverty))out.lowIncomeFamilies=safe(Math.max(0,Number(uptoHalf)-Number(poverty)));
+    if(finite(uptoHalf)&&finite(aboveHalf))out.families=safe(Number(uptoHalf)+Number(aboveHalf));
+    if(latest)out.reference=String(latest.month).padStart(2,'0')+'/'+latest.year;
     out.extremePovertyFamilies=null;
-    out.notes.push('Desde março de 2023, o conjunto aberto nacional não publica extrema pobreza separadamente; pobreza corresponde à linha administrativa do Programa Bolsa Família.');
+    out.notes.push('A base atual a partir de mar/2023 não separa extrema pobreza; o campo permanece n/d.');
   }
-  if(pbf){
-    out.bolsaFamiliaFamilies=safe(pbf.values[0]);
-    out.bolsaFamiliaReference=String(pbf.month).padStart(2,'0')+'/'+pbf.year;
+
+  if(pbfMetrics.length){
+    const familySizeRows=pbfMetrics.filter(x=>/familias beneficiarias.*formada por|unipessoais|8 ou mais integrantes/.test(x.context));
+    const unique=[];
+    const seen=new Set();
+    for(const x of familySizeRows){
+      const key=x.context.slice(-220);
+      if(!seen.has(key)&&finite(x.values?.[0])){seen.add(key);unique.push(Number(x.values[0]))}
+    }
+    if(unique.length>=4)out.bolsaFamiliaFamilies=safe(unique.reduce((a,b)=>a+b,0));
+    const latest=pbfMetrics.slice().sort((a,b)=>b.key-a.key)[0];
+    if(latest)out.bolsaFamiliaReference=String(latest.month).padStart(2,'0')+'/'+latest.year;
   }
-  if(pcd){
-    out.pcdPeople=safe(pcd.values[0]);
-    out.pcdReference=String(pcd.month).padStart(2,'0')+'/'+pcd.year;
-  }
-  if(Array.isArray(bpc)&&bpc.length){
-    const pcd=visMetric(bpc,/pessoas com deficiencia.*beneficiarias do bpc/);
-    const elderly=visMetric(bpc,/idosos.*beneficiari.*bpc/);
-    const total=visMetric(bpc,/total de beneficiarios do bpc/);
-    out.bpcPcd=safe(pcd);
-    out.bpcElderly=safe(elderly);
-    out.bpcTotal=safe(total);
-    const latest=bpc.slice().sort((a,b)=>b.key-a.key)[0];
+
+  if(bpcMetrics.length){
+    out.bpcTotal=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico(?!.*pcd|.*idoso)/));
+    out.bpcPcd=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*pcd/));
+    out.bpcElderly=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*idoso/));
+    const latest=bpcMetrics.slice().sort((a,b)=>b.key-a.key)[0];
     if(latest)out.bpcReference=String(latest.month).padStart(2,'0')+'/'+latest.year;
-    out.bpcBasis='município pagador';
+    out.bpcBasis='beneficiários do BPC inscritos no Cadastro Único';
   }
+
+  if(finite(pcdCensus)){
+    out.pcdPeople=safe(pcdCensus);
+    out.pcdReference='Censo 2022';
+    out.pcdBasis='IBGE · pessoas de 2 anos ou mais com deficiência';
+  }
+
   const useful=[out.families,out.povertyFamilies,out.lowIncomeFamilies,out.bolsaFamiliaFamilies,out.pcdPeople,out.bpcTotal].some(finite);
   return useful?out:null;
 }
@@ -392,13 +416,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.6.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.7.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.6.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.7.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
