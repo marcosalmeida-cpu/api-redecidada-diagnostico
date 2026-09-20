@@ -734,23 +734,27 @@ function slugifyPt(s){
 function plainPageText(html){
   return htmlDecode(String(html||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|li|div|tr|section|article|h\d)>/gi,'\n').replace(/<[^>]+>/g,' ')).replace(/[ \t]+/g,' ').replace(/\n\s*\n+/g,'\n');
 }
-function labeledNumber(text,labelRx){
-  const m=text.match(new RegExp(labelRx.source+'[\\\\s\\\\S]{0,220}?([0-9][0-9.]*?(?:,[0-9]+)?)\\\\s*(?:matr[ií]culas|docentes|escolas|%|\\\\[)',labelRx.flags.includes('i')?'i':''));
-  return m?num(m[1]):NaN;
-}
-function labeledYear(text,labelRx){
-  const m=text.match(new RegExp(labelRx.source+'[\\\\s\\\\S]{0,260}?\\\\[(20\\\\d{2})\\\\]',labelRx.flags.includes('i')?'i':''));
-  return m?Number(m[1]):null;
+function metricNearLabel(text,labelRx){
+  const i=String(text||'').search(labelRx);if(i<0)return {value:null,year:null};
+  const seg=String(text).slice(i,i+420);
+  const ym=seg.match(/\[(20\d{2})\]/);
+  const after=ym?seg.slice((ym.index||0)+ym[0].length):seg.slice(Math.min(seg.length,80));
+  const vm=after.match(/([0-9][0-9.]*?(?:,[0-9]+)?)(?=\s*(?:matr[ií]culas|docentes|escolas|%|R\$|$))/i)
+    || after.match(/([0-9]+(?:[.,][0-9]+)?)/);
+  return {value:vm?safe(num(vm[1])):null,year:ym?Number(ym[1]):null};
 }
 async function ibgeCityEducation(m){
   if(!m.uf||!m.nome)return null;
   try{
     const url=`https://www.ibge.gov.br/cidades-e-estados/${String(m.uf).toLowerCase()}/${slugifyPt(m.nome)}`;
     const text=plainPageText(await fetchText(url,25000));
-    const rFund=/Matr[ií]culas no ensino fundamental/i,rTeach=/Docentes no ensino fundamental/i,rSchool=/N[uú]mero de estabelecimentos de ensino fundamental/i;
-    const rIni=/IDEB\s*[–-]\s*Anos iniciais do ensino fundamental/i,rFin=/IDEB\s*[–-]\s*Anos finais do ensino fundamental/i;
-    const get=(rx)=>{const mm=text.match(new RegExp(rx.source+'[\\\\s\\\\S]{0,180}?([0-9]+(?:[.,][0-9]+)?)', 'i'));return mm?num(mm[1]):NaN};
-    return {enrollments:safe(labeledNumber(text,rFund)),teachers:safe(labeledNumber(text,rTeach)),schools:safe(labeledNumber(text,rSchool)),idebInitial:safe(get(rIni)),idebFinal:safe(get(rFin)),year:labeledYear(text,rFund),idebYear:labeledYear(text,rIni),source:'IBGE Cidades · fonte educacional INEP'};
+    const fundamental=metricNearLabel(text,/Matr[ií]culas no ensino fundamental/i);
+    const teachers=metricNearLabel(text,/Docentes no ensino fundamental/i);
+    const schools=metricNearLabel(text,/N[uú]mero de estabelecimentos de ensino fundamental/i);
+    const idebInitial=metricNearLabel(text,/IDEB\s*[–-]\s*Anos iniciais do ensino fundamental/i);
+    const idebFinal=metricNearLabel(text,/IDEB\s*[–-]\s*Anos finais do ensino fundamental/i);
+    if(![fundamental.value,teachers.value,schools.value,idebInitial.value,idebFinal.value].some(finite))return null;
+    return {enrollments:fundamental.value,teachers:teachers.value,schools:schools.value,idebInitial:idebInitial.value,idebFinal:idebFinal.value,year:fundamental.year,idebYear:idebInitial.year||idebFinal.year,source:'IBGE Cidades · fonte educacional INEP'};
   }catch{return null}
 }
 let ipsCacheV12=new Map();
@@ -837,24 +841,30 @@ getEducation=async function(m){
   return out;
 }
 
-function latestSeriesValue(text,labelRx){
-  const m=String(text||'').match(labelRx);if(!m)return null;
-  const start=m.index+m[0].length,seg=String(text).slice(start,start+16000),rows=[];
-  for(const z of seg.matchAll(/(0?[1-9]|1[0-2])\/(20\d{2})\s*\|\s*([0-9][0-9.]*)/g)){
-    const month=Number(z[1]),year=Number(z[2]),value=num(z[3]);
-    if(finite(value))rows.push({month,year,key:year*100+month,value:Number(value)});
+function latestSeriesFromRows(rows){
+  const out=[];
+  for(const row of rows||[]){
+    const p=periodKey(row?.[0]);if(!p)continue;
+    const v=num(row?.[1]);if(finite(v))out.push({...p,value:Number(v)});
   }
-  rows.sort((x,y)=>y.key-x.key);return rows[0]||null;
+  out.sort((a,b)=>b.key-a.key);return out[0]||null;
+}
+function visSeriesTables(html){
+  return parseHtmlTables(html).filter(rows=>rows.some(r=>periodKey(r?.[0])) && rows.some(r=>r.some(x=>/refer[eê]ncia/i.test(clean(x)))));
 }
 async function cadunicoVisData(m){
   try{
     const uf=String(m.ibge).slice(0,2),code6=String(m.ibge).slice(0,6);
     const url=`https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=e&sag=${uf}&codigo=${code6}`;
-    const text=plainPageText(await fetchText(url,30000));
+    const html=await fetchText(url,30000),text=stripHtml(html);
     if(m.nome && !clean(text).includes(clean(m.nome)))return null;
-    const poverty=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único em situação de pobreza[^]*?Referência\s*\|/i);
-    const low=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único com renda per capita de até meio salário-mínimo[^]*?Referência\s*\|/i);
-    const above=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único com renda per capita acima de meio salário-mínimo[^]*?Referência\s*\|/i);
+
+    // Nesta visualização, as três primeiras séries são:
+    // pobreza; até 1/2 salário mínimo; acima de 1/2 salário mínimo.
+    const tables=visSeriesTables(html);
+    const poverty=latestSeriesFromRows(tables[0]||[]);
+    const low=latestSeriesFromRows(tables[1]||[]);
+    const above=latestSeriesFromRows(tables[2]||[]);
     const ref=[poverty,low,above].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
     const families=(low&&above&&low.key===above.key)?low.value+above.value:null;
     if(!finite(families)&&!finite(low?.value)&&!finite(poverty?.value))return null;
@@ -932,10 +942,14 @@ async function diagnostic(m) {
     sources.education.status='partial';
     sources.education.message='Apenas parte dos indicadores educacionais respondeu.';
   }
+  if (data.cadunico && (!finite(data.cadunico.families) || !finite(data.cadunico.people) || !finite(data.cadunico.street))) {
+    sources.cadunico.status='partial';
+    sources.cadunico.message='Cadastro Único carregado parcialmente; alguns recortes não estão expostos na fonte municipal aberta utilizada.';
+  }
 
   return {
     ok:true,
-    version:'1.2.1',
+    version:'1.2.2',
     municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},
     generatedAt:new Date().toISOString(),
     cacheTtlSeconds:CACHE_TTL/1000,
@@ -961,7 +975,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.2.1',
+        version:'1.2.2',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}'],
         time:new Date().toISOString()
       });
