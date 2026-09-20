@@ -9,6 +9,7 @@ const TTL=6*60*60*1000;
 const cache=new Map();
 const SNAP=path.join(__dirname,'data','snapshots');
 const IBGE='https://servicodados.ibge.gov.br/api/v1/localidades/municipios/';
+const IBGE_AGG='https://servicodados.ibge.gov.br/api/v3/agregados';
 const SICONFI='https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca';
 const TRANSFERE='https://api-publica.transferegov.gestao.gov.br/especiais/';
 
@@ -32,6 +33,7 @@ async function request(url,ms=12000){
   }finally{clearTimeout(t)}
 }
 const fetchJson=async(url,ms=12000)=>(await request(url,ms)).json();
+const fetchText=async(url,ms=10000)=>(await request(url,ms)).text();
 function send(res,status,body){
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type','cache-control':'no-store'});
   res.end(JSON.stringify(body));
@@ -56,6 +58,39 @@ async function snapshot(name,ibge){
 function result(name,status,data,source,message='',reference=''){
   return {name,status,data:data??null,source,reference,message,updatedAt:new Date().toISOString()};
 }
+async function ibgeMeta(table){return fetchJson(IBGE_AGG+'/'+table+'/metadados',10000)}
+function totalCategory(c){const cats=Array.isArray(c?.categorias)?c.categorias:[];return cats.find(a=>clean(a.nome)==='total')?.id??cats[0]?.id??'all'}
+function classQuery(meta,expand=[]){return (meta?.classificacoes||[]).map(x=>x.id+'['+(expand.some(rx=>rx.test(clean(x.nome)))?'all':totalCategory(x))+']').join('|')}
+async function ibgeData(table,period,vars,m,classif=''){const u=new URL(IBGE_AGG+'/'+table+'/periodos/'+period+'/variaveis/'+vars);u.searchParams.set('localidades','N6['+m.ibge+']');if(classif)u.searchParams.set('classificacao',classif);return fetchJson(u.toString(),12000)}
+function aggFlat(data){const out=[];for(const v of(Array.isArray(data)?data:[]))for(const r of(v.resultados||[])){const labels=(r.classificacoes||[]).flatMap(x=>Object.values(x.categoria||{}));for(const s of(r.series||[]))for(const [period,value] of Object.entries(s.serie||{}))out.push({variableId:v.id||v.variavelId||'',variable:v.variavel||'',value:num(value),labels,period})}return out}
+async function liveProfile(m){
+  const snap=await snapshot('perfil',m.ibge);if(snap)return result('perfil','ok',snap,'IBGE · snapshot','Base territorial municipal carregada.',snap.reference||'');
+  const out={};let refs=[];
+  try{const d=await ibgeData(6579,'-1','9324',m);const r=aggFlat(d).filter(x=>finite(x.value)).sort((a,b)=>String(b.period).localeCompare(String(a.period)))[0];if(r){out.population=Number(r.value);out.populationEstimate=Number(r.value);refs.push('estimativa '+r.period)}}catch{}
+  try{const d=await ibgeData(4714,2022,'93|6318|614',m);const rows=aggFlat(d).filter(x=>finite(x.value));for(const x of rows){if(String(x.variableId)==='93')out.populationCensus=Number(x.value);if(String(x.variableId)==='6318')out.area=Number(x.value);if(String(x.variableId)==='614')out.density=Number(x.value)}refs.push('Censo 2022')}catch{}
+  try{const meta=await ibgeMeta(9514);const d=await ibgeData(9514,2022,'93',m,classQuery(meta,[/idade|grupo de idade/]));const rows=aggFlat(d).filter(x=>finite(x.value));const groups={};for(const x of rows){const lab=(x.labels||[]).find(a=>/anos|100/i.test(String(a)));if(lab)groups[lab]=Math.max(groups[lab]||0,Number(x.value))}const vals=Object.entries(groups).map(([label,value])=>({label,value}));out.ageGroups=vals;out.youth15_29=vals.filter(x=>/15 a 19|20 a 24|25 a 29/i.test(x.label)).reduce((s,x)=>s+x.value,0)||null;out.older60=vals.filter(x=>/60 a|65 a|70 a|75 a|80 a|85 a|90 a|95 a|100/i.test(x.label)).reduce((s,x)=>s+x.value,0)||null}catch{}
+  if(!out.population&&out.populationCensus)out.population=out.populationCensus;
+  if(!Object.keys(out).length)return result('perfil','bad',null,'IBGE · SIDRA/Censo','IBGE não respondeu nesta consulta.','');
+  out.reference=[...new Set(refs)].join(' · ');return result('perfil','ok',out,'IBGE · SIDRA/Censo','Perfil territorial carregado automaticamente.',out.reference);
+}
+async function liveEducation(m){
+  const snap=await snapshot('educacao',m.ibge);const out=snap?{...snap}:{};
+  if(!finite(out.literacyPercent))try{const meta=await ibgeMeta(9543);const d=await ibgeData(9543,2022,'all',m,classQuery(meta,[]));const r=aggFlat(d).find(x=>finite(x.value)&&clean(x.variable).includes('taxa de alfabetizacao'));if(r)out.literacyPercent=Number(r.value)}catch{}
+  if(!out.instruction)try{const meta=await ibgeMeta(10061);const d=await ibgeData(10061,2022,'all',m,classQuery(meta,[/nivel de instrucao/]));const rows=aggFlat(d).filter(x=>finite(x.value)&&!clean(x.variable).includes('percentual'));const labels=['Sem instrução e fundamental incompleto','Fundamental completo e médio incompleto','Médio completo e superior incompleto','Superior completo'];const values=labels.map(l=>rows.find(x=>(x.labels||[]).some(a=>clean(a)===clean(l)))?.value||0),total=values.reduce((a,b)=>a+b,0);if(total){out.instruction={labels,values,total};out.lowEducationPercent=100*(values[0]+values[1])/total}}catch{}
+  const ok=[out.literacyPercent,out.lowEducationPercent,out.enrollments,out.idebInitial,out.idebFinal].some(finite);
+  return ok?result('educacao',snap?'ok':'partial',out,snap?'INEP + IBGE snapshot':'IBGE · Censo 2022',snap?'Educação carregada.':'Escolaridade carregada automaticamente; Censo Escolar/IDEB dependem do snapshot periódico.',out.reference||'Censo 2022'):result('educacao','bad',null,'IBGE/INEP','Fontes educacionais não responderam.','');
+}
+function stripHtml(s){return String(s||'').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()}
+function htmlTables(html){const out=[];for(const tm of String(html||'').matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)){const rows=[];for(const rm of tm[1].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){const cells=[...rm[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>stripHtml(x[1]));if(cells.length)rows.push(cells)}if(rows.length)out.push(rows)}return out}
+function periodCell(v){const m=String(v||'').match(/(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/);return m?{month:Number(m[1]),year:Number(m[2]),key:Number(m[2])*100+Number(m[1])}:null}
+function latestSeries(rows){const found=[];for(const row of rows||[]){const pi=row.findIndex(x=>periodCell(x));if(pi<0)continue;const p=periodCell(row[pi]);let value=NaN;for(let i=pi+1;i<row.length;i++){const v=num(row[i]);if(finite(v)){value=Number(v);break}}if(finite(value))found.push({...p,value})}found.sort((a,b)=>b.key-a.key);return found[0]||null}
+async function liveCadunico(m){
+  const snap=await snapshot('cadunico',m.ibge);if(snap)return snap;
+  const code6=String(m.ibge).slice(0,6);
+  try{const url='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=m&codigo='+code6;const html=await fetchText(url,9000);const text=stripHtml(html);if(m.nome&&!clean(text).includes(clean(m.nome)))throw new Error('município divergente');const series=htmlTables(html).map(latestSeries).filter(Boolean);const poverty=series[0]||null,low=series[1]||null,above=series[2]||null;const ref=[poverty,low,above].filter(Boolean).sort((a,b)=>b.key-a.key)[0]||null;const families=(low&&above&&low.key===above.key)?low.value+above.value:null;if([families,low?.value,poverty?.value].some(finite))return {families:safe(families),lowIncomeFamilies:safe(low?.value),povertyFamilies:safe(poverty?.value),aboveHalfFamilies:safe(above?.value),people:null,street:null,reference:ref?(String(ref.month).padStart(2,'0')+'/'+ref.year):'',source:'MDS · VIS DATA 3'}}catch{}
+  return null;
+}
+async function liveVulnerability(m){const cad=await liveCadunico(m),iv=await snapshot('ivcad',m.ibge);if(cad||iv)return result('vulnerabilidade',cad?(iv?'ok':'partial'):'partial',{cadunico:cad||null,ivcad:iv||null},'MDS · Cadastro Único / IVCAD',cad?'Cadastro Único consultado automaticamente.':'IVCAD disponível sem Cadastro Único.',cad?.reference||iv?.reference||'');return result('vulnerabilidade','bad',{cadunico:null,ivcad:null},'MDS · Cadastro Único / IVCAD','Cadastro Único não respondeu e não há snapshot local. IVCAD não bloqueia os demais módulos.','')}
 async function snapshotModule(name,m,source,label){
   const d=await snapshot(name,m.ibge);
   return d
@@ -116,13 +151,9 @@ async function resources(m){
   }catch(e){return result('recursos','bad',null,'Transferegov',e?.message||'Consulta sem retorno.','')}
 }
 const loaders={
-  perfil:m=>snapshotModule('perfil',m,'IBGE · Censo/SIDRA snapshot','Perfil territorial'),
-  vulnerabilidade:async m=>{
-    const cad=await snapshot('cadunico',m.ibge),iv=await snapshot('ivcad',m.ibge);
-    if(cad||iv)return result('vulnerabilidade',cad?'ok':'partial',{cadunico:cad||null,ivcad:iv||null},'MDS · Cadastro Único / IVCAD snapshots',cad?'Base social municipal carregada.':'IVCAD disponível sem Cadastro Único.',cad?.reference||iv?.reference||'');
-    return result('vulnerabilidade','pending',{cadunico:null,ivcad:null},'MDS · Cadastro Único / IVCAD','Snapshot social ainda não carregado. IVCAD não bloqueia o diagnóstico.','');
-  },
-  educacao:m=>snapshotModule('educacao',m,'INEP + IBGE snapshot','Educação'),
+  perfil:liveProfile,
+  vulnerabilidade:liveVulnerability,
+  educacao:liveEducation,
   trabalho:m=>snapshotModule('trabalho',m,'MTE · RAIS/Novo Caged snapshot','Trabalho e renda'),
   aprendizagem:m=>snapshotModule('aprendizagem',m,'MTE/SIT · eSocial snapshot','Aprendizagem profissional'),
   protecao:m=>snapshotModule('suas',m,'MDS · Censo SUAS snapshot','Rede de proteção'),
@@ -158,13 +189,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.0.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.1.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.0.0',mode:'light-modular',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.1.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
