@@ -704,7 +704,7 @@ function rmaTrend(units,code,limit=6){
   }
   return rows.reverse();
 }
-async function getMse(m){
+getMse=async function(m){
   const idx=await rmaMunicipalIndex(m);
   if(!idx.types.creas.length)throw new Error('RMA: nenhum CREAS localizado para o município');
   const settledUnits=await Promise.allSettled(idx.types.creas.map(id=>rmaUnitSeries('creas',id)));
@@ -714,7 +714,7 @@ async function getMse(m){
   const a=aggregateRma(units,p.key,['j1','j2','j3','j4','j5','j6']);
   return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.creas.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.creas.length,trend:rmaTrend(units,'j1',6),source:'MDS · RMA CREAS (consulta pública por unidade)',reference:\`\${String(p.month).padStart(2,'0')}/\${p.year}\`};
 }
-async function getPopRua(m){
+getPopRua=async function(m){
   const idx=await rmaMunicipalIndex(m);
   if(!idx.types.pop.length)throw new Error('RMA: nenhum Centro POP localizado para o município');
   const settledUnits=await Promise.allSettled(idx.types.pop.map(id=>rmaUnitSeries('pop',id)));
@@ -724,7 +724,7 @@ async function getPopRua(m){
   const a=aggregateRma(units,p.key,['a1','c1','c2','d1','e1','f1']);
   return {year:p.year,month:p.month,monthLabel:MONTHS[p.month],...a.values,unitsTotal:idx.types.pop.length,unitsReporting:a.reporting,coverage:a.reporting/idx.types.pop.length,trend:rmaTrend(units,'a1',6),source:'MDS · RMA Centro POP (consulta pública por unidade)',reference:\`\${String(p.month).padStart(2,'0')}/\${p.year}\`};
 }
-async function getSuas(m){
+getSuas=async function(m){
   const idx=await rmaMunicipalIndex(m);
   return {year:new Date().getFullYear(),cras:idx.types.cras.length,creas:idx.types.creas.length,centroPop:idx.types.pop.length,source:'MDS · Sistema RMA · unidades cadastradas',reference:'consulta municipal'};
 }
@@ -789,7 +789,7 @@ function ivcadNorm(v){
   if(n>1&&n<=100)n/=100;
   return n>=0&&n<=1?n:NaN;
 }
-async function getIvcad(m){
+getIvcad=async function(m){
   const local=await localIvcad(m);if(local&&finite(local.general))return local;
   const template=String(process.env.IVCAD_JSON_URL_TEMPLATE||'').trim();
   if(template){try{const x=normalizeIvcad(await fetchJson(template.replace('{ibge}',encodeURIComponent(m.ibge)),24000));if(x)return x}catch{}}
@@ -806,7 +806,7 @@ async function latestSebraeYear(cube){
     return years;
   }catch{return[]}
 }
-async function getEducation(m){
+getEducation=async function(m){
   const out={literacyPercent:null,lowEducationPercent:null,instruction:null,enrollments:null,teachers:null,classes:null,schools:null,year:null,idebInitial:null,idebFinal:null,idebYear:null};
   try{const meta=await ibgeMeta(9543),d=await ibgeData(9543,2022,'all',m,classQuery(meta,[])),r=aggFlat(d).find(x=>finite(x.value)&&clean(x.variable).includes('taxa de alfabetizacao'));if(r)out.literacyPercent=safe(r.value)}catch{}
   try{
@@ -861,7 +861,7 @@ async function cadunicoVisData(m){
     return {families:safe(families),people:null,lowIncome:safe(low?.value),poverty:safe(poverty?.value),street:null,source:'MDS · VIS DATA 3 / Cadastro Único',reference:ref?\`\${String(ref.month).padStart(2,'0')}/\${ref.year}\`:''};
   }catch{return null}
 }
-async function getCadunico(m){
+getCadunico=async function(m){
   const urls=[];
   for(const code of [m.ibge,m.ibge.slice(0,6)]){
     urls.push(\`https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo=\${code}\`);
@@ -882,7 +882,7 @@ async function getCadunico(m){
   if(![families,people,low,street].some(finite)){const vis=await cadunicoVisData(m);if(vis)return vis;throw new Error('Cadastro Único: página respondeu, mas sem indicadores estruturados');}
   return {families:safe(families),people:safe(people),lowIncome:safe(low),street:safe(street),source:'MDS · RI Social / SAGICAD'};
 }
-async function getBudget(m){
+getBudget=async function(m){
   let items=[],year=null,reference='';
   for(const y of [2025,2024,2023,2022,2021]){
     try{const u=new URL('https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca');u.searchParams.set('an_exercicio',y);u.searchParams.set('no_anexo','DCA-Anexo I-E');u.searchParams.set('id_ente',m.ibge);const d=await fetchJson(u,30000);if(Array.isArray(d?.items)&&d.items.length){items=d.items;year=y;reference=\`DCA \${y} · despesas liquidadas\`;break}}catch{}
