@@ -1,16 +1,14 @@
 {
   "name": "diagnostico-territorial-rede-cidada",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
     "check": "node --check server.mjs"
   },
-  "dependencies": {
-    "xlsx": "^0.18.5"
-  },
+  "dependencies": {},
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <23"
   }
 }
