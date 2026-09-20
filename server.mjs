@@ -1086,13 +1086,13 @@ function buildAnalysisV14(data,m){
   const pop=Number(data?.territory?.population||0)||null;
   const cad=data?.cadunico||{},edu=data?.education||{},work=data?.work||{},suas=data?.suas||{},bud=data?.budget||{},app=data?.apprenticeship||{},em=data?.emendas||{},iv=data?.ivcad||{};
 
-  if(finite(cad.families)||finite(cad.people))add('Vulnerabilidade',\`O Cadastro Único registra \${finite(cad.families)?new Intl.NumberFormat('pt-BR').format(cad.families)+' famílias':''}\${finite(cad.families)&&finite(cad.people)?' e ':''}\${finite(cad.people)?new Intl.NumberFormat('pt-BR').format(cad.people)+' pessoas':''} no município. A leitura deve ser combinada com renda, composição familiar e IVCAD para priorização territorial.\`,'attention');
-  if(finite(iv.general))add('IVCAD',\`O IVCAD geral disponível para \${m.nome} é \${Number(iv.general).toLocaleString('pt-BR',{maximumFractionDigits:3})}. As dimensões devem ser interpretadas apenas quando disponibilizadas pela fonte estruturada oficial.\`,'attention');
-  if(finite(edu.literacyPercent)||finite(edu.lowEducationPercent))add('Educação',\`Os dados educacionais indicam taxa de alfabetização de \${finite(edu.literacyPercent)?Number(edu.literacyPercent).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'n/d'} e parcela com baixa escolaridade de \${finite(edu.lowEducationPercent)?Number(edu.lowEducationPercent).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'n/d'}. A permanência e a transição para o mundo do trabalho devem ser analisadas junto ao IDEB e à oferta profissional.\`,'info');
-  if(app?.potential&&finite(app.potential.total)){const a=app.potential.total;add('Aprendizagem',\`O potencial oficial de cota de aprendizagem é de \${new Intl.NumberFormat('pt-BR').format(a)} vínculos, segundo MTE/SIT. O indicador representa capacidade potencial de contratação, não vagas abertas.\`,'opportunity');opportunities.push('aprendizagem profissional e preparação de jovens para inserção formal')}
-  if(finite(bud.assist)||finite(bud.education)||finite(bud.health))add('Capacidade pública',\`O orçamento executado mostra capacidade fiscal relevante nas funções sociais consultadas. Assistência Social: \${finite(bud.assist)?Number(bud.assist).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'n/d'}; Educação: \${finite(bud.education)?Number(bud.education).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'n/d'}; Saúde: \${finite(bud.health)?Number(bud.health).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'n/d'}.\`,'capacity');
-  if(em?.federal&&finite(em.federal.indicated)){add('Recursos públicos',\`As transferências especiais federais identificadas somam \${Number(em.federal.indicated).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})} em valores indicados nos planos localizados. A execução deve ser acompanhada pelos relatórios de gestão e pelos portais do ente recebedor.\`,'capacity')}
-  if(finite(suas.cras)||finite(suas.creas)||finite(suas.centroPop))add('Proteção social',\`A rede consultada possui \${finite(suas.cras)?suas.cras:'n/d'} CRAS, \${finite(suas.creas)?suas.creas:'n/d'} CREAS e \${finite(suas.centroPop)?suas.centroPop:'n/d'} Centro(s) POP. Esses números expressam presença de equipamentos, não medem sozinhos suficiência ou cobertura.\`,'info');
+  if(finite(cad.families)||finite(cad.people))add('Vulnerabilidade',`O Cadastro Único registra ${finite(cad.families)?new Intl.NumberFormat('pt-BR').format(cad.families)+' famílias':''}${finite(cad.families)&&finite(cad.people)?' e ':''}${finite(cad.people)?new Intl.NumberFormat('pt-BR').format(cad.people)+' pessoas':''} no município. A leitura deve ser combinada com renda, composição familiar e IVCAD para priorização territorial.`,'attention');
+  if(finite(iv.general))add('IVCAD',`O IVCAD geral disponível para ${m.nome} é ${Number(iv.general).toLocaleString('pt-BR',{maximumFractionDigits:3})}. As dimensões devem ser interpretadas apenas quando disponibilizadas pela fonte estruturada oficial.`,'attention');
+  if(finite(edu.literacyPercent)||finite(edu.lowEducationPercent))add('Educação',`Os dados educacionais indicam taxa de alfabetização de ${finite(edu.literacyPercent)?Number(edu.literacyPercent).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'n/d'} e parcela com baixa escolaridade de ${finite(edu.lowEducationPercent)?Number(edu.lowEducationPercent).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'n/d'}. A permanência e a transição para o mundo do trabalho devem ser analisadas junto ao IDEB e à oferta profissional.`,'info');
+  if(app?.potential&&finite(app.potential.total)){const a=app.potential.total;add('Aprendizagem',`O potencial oficial de cota de aprendizagem é de ${new Intl.NumberFormat('pt-BR').format(a)} vínculos, segundo MTE/SIT. O indicador representa capacidade potencial de contratação, não vagas abertas.`,'opportunity');opportunities.push('aprendizagem profissional e preparação de jovens para inserção formal')}
+  if(finite(bud.assist)||finite(bud.education)||finite(bud.health))add('Capacidade pública',`O orçamento executado mostra capacidade fiscal relevante nas funções sociais consultadas. Assistência Social: ${finite(bud.assist)?Number(bud.assist).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'n/d'}; Educação: ${finite(bud.education)?Number(bud.education).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'n/d'}; Saúde: ${finite(bud.health)?Number(bud.health).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'n/d'}.`,'capacity');
+  if(em?.federal&&finite(em.federal.indicated)){add('Recursos públicos',`As transferências especiais federais identificadas somam ${Number(em.federal.indicated).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})} em valores indicados nos planos localizados. A execução deve ser acompanhada pelos relatórios de gestão e pelos portais do ente recebedor.`,'capacity')}
+  if(finite(suas.cras)||finite(suas.creas)||finite(suas.centroPop))add('Proteção social',`A rede consultada possui ${finite(suas.cras)?suas.cras:'n/d'} CRAS, ${finite(suas.creas)?suas.creas:'n/d'} CREAS e ${finite(suas.centroPop)?suas.centroPop:'n/d'} Centro(s) POP. Esses números expressam presença de equipamentos, não medem sozinhos suficiência ou cobertura.`,'info');
 
   if(finite(cad.lowIncome))opportunities.push('inclusão produtiva e qualificação de pessoas de baixa renda');
   if(finite(cad.street)&&cad.street>0)opportunities.push('inclusão produtiva e acompanhamento de pessoas em situação de rua');
@@ -1100,7 +1100,7 @@ function buildAnalysisV14(data,m){
   if(finite(iv.general)&&iv.general>=0.4)opportunities.push('ações integradas de desenvolvimento socioemocional e proteção social');
   opportunities.push('articulação com a rede pública, empresas e organizações sociais do território');
 
-  return {headline:\`Leitura integrada de \${m.nome}/\${m.uf}\`,items,opportunities:[...new Set(opportunities)].slice(0,8),method:'Síntese analítica Rede Cidadã construída apenas a partir dos indicadores efetivamente carregados; não substitui estudo técnico setorial nem cria estimativas para dados ausentes.'};
+  return {headline:`Leitura integrada de ${m.nome}/${m.uf}`,items,opportunities:[...new Set(opportunities)].slice(0,8),method:'Síntese analítica Rede Cidadã construída apenas a partir dos indicadores efetivamente carregados; não substitui estudo técnico setorial nem cria estimativas para dados ausentes.'};
 }
 
 async function diagnostic(m) {
@@ -1142,7 +1142,7 @@ async function diagnostic(m) {
   const analysis=buildAnalysisV14(data,m);
   return {
     ok:true,
-    version:'1.4.0',
+    version:'1.4.1',
     municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},
     generatedAt:new Date().toISOString(),
     cacheTtlSeconds:CACHE_TTL/1000,
@@ -1170,7 +1170,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.4.0',
+        version:'1.4.1',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}','/api/educacao/{codigoIBGE}','/api/suas/{codigoIBGE}','/api/orcamento/{codigoIBGE}','/api/aprendizagem/{codigoIBGE}','/api/emendas/{codigoIBGE}','/api/vulnerabilidade/{codigoIBGE}'],
         time:new Date().toISOString()
       });
