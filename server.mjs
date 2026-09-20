@@ -585,6 +585,31 @@ function parseHtmlTables(html){
   }
   return tables;
 }
+function parseDelimitedTables(text){
+  const lines=String(text||'').split(/\r?\n/),tables=[];let current=[];
+  const flush=()=>{if(current.length>=2)tables.push(current);current=[]};
+  for(const raw of lines){
+    const line=raw.trim();
+    if(!line){if(current.length)flush();continue}
+    if(!line.includes('|')){if(current.length)flush();continue}
+    let cells=line.split('|').map(x=>x.trim());
+    if(cells[0]==='')cells=cells.slice(1);if(cells[cells.length-1]==='')cells=cells.slice(0,-1);
+    if(!cells.length||cells.every(x=>/^:?-{2,}:?$/.test(x)||!x))continue;
+    current.push(cells);
+  }
+  if(current.length)flush();return tables;
+}
+function parseDocumentTables(text){
+  const a=parseHtmlTables(text),b=parseDelimitedTables(text);
+  return a.length?[...a,...b]:b;
+}
+async function fetchTextPublic(url,ms=30000){
+  let last=null;
+  for(const u of [url,`https://r.jina.ai/${url}`]){
+    try{const t=await fetchText(u,ms);if(t&&t.length>100)return t}catch(e){last=e}
+  }
+  throw last||new Error('Fonte textual indisponível');
+}
 function periodKey(s){
   const m=String(s||'').match(/(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/);
   if(!m)return null;
@@ -747,7 +772,7 @@ async function ibgeCityEducation(m){
   if(!m.uf||!m.nome)return null;
   try{
     const url=`https://www.ibge.gov.br/cidades-e-estados/${String(m.uf).toLowerCase()}/${slugifyPt(m.nome)}`;
-    const text=plainPageText(await fetchText(url,25000));
+    const text=plainPageText(await fetchTextPublic(url,25000));
     const fundamental=metricNearLabel(text,/Matr[ií]culas no ensino fundamental/i);
     const teachers=metricNearLabel(text,/Docentes no ensino fundamental/i);
     const schools=metricNearLabel(text,/N[uú]mero de estabelecimentos de ensino fundamental/i);
@@ -779,7 +804,7 @@ async function ipsMunicipalRow(m){
     `https://ipsbrasil.org.br/pt/explore/dados?page=1&per_page=1000&sort_by%5Bmunicipality_data%5D=municipality_name&sort_order=asc&year=2025&states=${stateCode}`
   ];
   for(const u of urls){
-    try{const row=tableObjectFromHtml(await fetchText(u,30000),m.ibge);if(row){ipsCacheV12.set(m.ibge,row);return row}}catch{}
+    try{const row=tableObjectFromHtml(await fetchTextPublic(u,30000),m.ibge);if(row){ipsCacheV12.set(m.ibge,row);return row}}catch{}
   }
   return null;
 }
@@ -850,13 +875,13 @@ function latestSeriesFromRows(rows){
   out.sort((a,b)=>b.key-a.key);return out[0]||null;
 }
 function visSeriesTables(html){
-  return parseHtmlTables(html).filter(rows=>rows.some(r=>periodKey(r?.[0])) && rows.some(r=>r.some(x=>/refer[eê]ncia/i.test(clean(x)))));
+  return parseDocumentTables(html).filter(rows=>rows.some(r=>periodKey(r?.[0])) && rows.some(r=>r.some(x=>/refer[eê]ncia/i.test(clean(x)))));
 }
 async function cadunicoVisData(m){
   try{
     const uf=String(m.ibge).slice(0,2),code6=String(m.ibge).slice(0,6);
     const url=`https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=e&sag=${uf}&codigo=${code6}`;
-    const html=await fetchText(url,30000),text=stripHtml(html);
+    const html=await fetchTextPublic(url,30000),text=stripHtml(html);
     if(m.nome && !clean(text).includes(clean(m.nome)))return null;
 
     // Nesta visualização, as três primeiras séries são:
@@ -949,7 +974,7 @@ async function diagnostic(m) {
 
   return {
     ok:true,
-    version:'1.2.2',
+    version:'1.3.0',
     municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},
     generatedAt:new Date().toISOString(),
     cacheTtlSeconds:CACHE_TTL/1000,
@@ -975,7 +1000,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.2.2',
+        version:'1.3.0',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}'],
         time:new Date().toISOString()
       });
