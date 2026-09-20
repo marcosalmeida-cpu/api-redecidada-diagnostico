@@ -86,12 +86,18 @@ async function liveProfile(m){
     const meta=await ibgeMeta(9514);
     const d=await ibgeData(9514,2022,'93',m,classQuery(meta,[/sexo/]));
     const rows=aggFlat(d).filter(x=>finite(x.value));
-    const pick=label=>rows.find(x=>(x.labels||[]).some(a=>clean(a)===clean(label)));
-    const men=pick('Homens'),women=pick('Mulheres');
-    const total=(finite(men?.value)?Number(men.value):0)+(finite(women?.value)?Number(women.value):0);
+    const byRx=rx=>rows.find(x=>(x.labels||[]).some(a=>rx.test(clean(a))));
+    const women=byRx(/mulher/), men=byRx(/homem/);
+    const totalRow=rows.find(x=>(x.labels||[]).some(a=>clean(a)==='total'));
+    let womenValue=finite(women?.value)?Number(women.value):null;
+    let menValue=finite(men?.value)?Number(men.value):null;
+    const officialTotal=finite(totalRow?.value)?Number(totalRow.value):(finite(out.populationCensus)?Number(out.populationCensus):null);
+    if(!finite(menValue)&&finite(officialTotal)&&finite(womenValue))menValue=officialTotal-womenValue;
+    if(!finite(womenValue)&&finite(officialTotal)&&finite(menValue))womenValue=officialTotal-menValue;
+    const total=(finite(menValue)?Number(menValue):0)+(finite(womenValue)?Number(womenValue):0);
     if(total)out.sex=[
-      {label:'Mulheres',value:safe(women?.value),percent:100*Number(women?.value||0)/total},
-      {label:'Homens',value:safe(men?.value),percent:100*Number(men?.value||0)/total}
+      {label:'Mulheres',value:safe(womenValue),percent:100*Number(womenValue||0)/total},
+      {label:'Homens',value:safe(menValue),percent:100*Number(menValue||0)/total}
     ];
   }catch{}
   if(!out.population&&out.populationCensus)out.population=out.populationCensus;
@@ -241,13 +247,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.3.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.3.1',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.3.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.3.1',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
