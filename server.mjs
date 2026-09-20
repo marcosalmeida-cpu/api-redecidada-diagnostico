@@ -617,15 +617,35 @@ async function rmaMunicipalIndex(m){
   const url=\`https://aplicacoes.mds.gov.br/sagi/atendimento/adm/lista_preenchimento_unidade.php?p_ibge=\${code6}\`;
   const html=await fetchText(url,25000);
   const types={cras:new Set(),creas:new Set(),pop:new Set()};
+
+  // 1) Tenta links/handlers presentes no HTML original.
   const rules=[
-    ['cras',/lista_preenchimento_cras_unidade\.php\?p_id_cras=(\d+)/gi],
-    ['creas',/lista_preenchimento_creas_unidade\.php\?p_id_creas=(\d+)/gi],
-    ['pop',/lista_preenchimento_centropop_unidade\.php\?p_id_unidade=(\d+)/gi]
+    ['cras',/lista_preenchimento_cras_unidade\.php[^"'<>]*?p_id_cras[=:'"\\s]+(\d{10,12})/gi],
+    ['creas',/lista_preenchimento_creas_unidade\.php[^"'<>]*?p_id_creas[=:'"\\s]+(\d{10,12})/gi],
+    ['pop',/lista_preenchimento_centropop_unidade\.php[^"'<>]*?p_id_unidade[=:'"\\s]+(\d{10,12})/gi]
   ];
   for(const [type,rx] of rules)for(const mm of html.matchAll(rx))types[type].add(mm[1]);
-  // contingência para páginas em que os links são montados por javascript, usando os IDs exibidos na listagem
+
+  // 2) Contingência mais robusta: a página pública separa os IDs em blocos
+  // IDCRAS ... IDCREAS ... IDCENTROPOP.
   const txt=stripHtml(html);
-  if(!types.cras.size)for(const mm of txt.matchAll(/\b(310620\d{5}|[1-9]\d{10})\b/g)){/* não inferir tipo sem link */}
+  const section=(from,to)=>{
+    const i=clean(txt).indexOf(clean(from));
+    if(i<0)return '';
+    const rest=txt.slice(i);
+    const j=to?clean(rest).indexOf(clean(to)): -1;
+    return j>0?rest.slice(0,j):rest;
+  };
+  const addIds=(set,segment)=>{
+    for(const mm of String(segment||'').matchAll(/\b(\d{11})\b/g))set.add(mm[1]);
+  };
+  if(!types.cras.size)addIds(types.cras,section('IDCRAS','IDCREAS'));
+  if(!types.creas.size)addIds(types.creas,section('IDCREAS','IDCENTROPOP'));
+  if(!types.pop.size)addIds(types.pop,section('IDCENTROPOP','Voltar'));
+
+  if(!types.cras.size&&!types.creas.size&&!types.pop.size){
+    throw new Error('RMA: página municipal respondeu, mas nenhuma unidade foi identificada');
+  }
   return {url,types:{cras:[...types.cras],creas:[...types.creas],pop:[...types.pop]}};
 }
 async function rmaUnitSeries(type,id){
@@ -816,6 +836,31 @@ async function getEducation(m){
   out.source='IBGE + INEP (Observatório Sebrae / IBGE Cidades) + IPS Brasil como contingência';
   return out;
 }
+
+function latestSeriesValue(text,labelRx){
+  const m=String(text||'').match(labelRx);if(!m)return null;
+  const start=m.index+m[0].length,seg=String(text).slice(start,start+16000),rows=[];
+  for(const z of seg.matchAll(/(0?[1-9]|1[0-2])\/(20\d{2})\s*\|\s*([0-9][0-9.]*)/g)){
+    const month=Number(z[1]),year=Number(z[2]),value=num(z[3]);
+    if(finite(value))rows.push({month,year,key:year*100+month,value:Number(value)});
+  }
+  rows.sort((x,y)=>y.key-x.key);return rows[0]||null;
+}
+async function cadunicoVisData(m){
+  try{
+    const uf=String(m.ibge).slice(0,2),code6=String(m.ibge).slice(0,6);
+    const url=\`https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=e&sag=\${uf}&codigo=\${code6}\`;
+    const text=plainPageText(await fetchText(url,30000));
+    if(m.nome && !clean(text).includes(clean(m.nome)))return null;
+    const poverty=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único em situação de pobreza[^]*?Referência\s*\|/i);
+    const low=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único com renda per capita de até meio salário-mínimo[^]*?Referência\s*\|/i);
+    const above=latestSeriesValue(text,/Número de famílias cadastradas no Cadastro Único com renda per capita acima de meio salário-mínimo[^]*?Referência\s*\|/i);
+    const ref=[poverty,low,above].filter(Boolean).sort((x,y)=>y.key-x.key)[0]||null;
+    const families=(low&&above&&low.key===above.key)?low.value+above.value:null;
+    if(!finite(families)&&!finite(low?.value)&&!finite(poverty?.value))return null;
+    return {families:safe(families),people:null,lowIncome:safe(low?.value),poverty:safe(poverty?.value),street:null,source:'MDS · VIS DATA 3 / Cadastro Único',reference:ref?\`\${String(ref.month).padStart(2,'0')}/\${ref.year}\`:''};
+  }catch{return null}
+}
 async function getCadunico(m){
   const urls=[];
   for(const code of [m.ibge,m.ibge.slice(0,6)]){
@@ -829,12 +874,12 @@ async function getCadunico(m){
     }
     if(text)break;
   }
-  if(!text)throw new Error('Cadastro Único: fonte municipal sem leitura automática');
+  if(!text){const vis=await cadunicoVisData(m);if(vis)return vis;throw new Error('Cadastro Único: fonte municipal sem leitura automática');}
   const families=findTextNumber(text,[/(?:fam[ií]lias)[^\d]{0,120}(?:cadastrad|inscrit)[^\d]{0,40}([\d\.]+)/i,/([\d\.]+)\s*fam[ií]lias[^\n]{0,100}cadastro [uú]nico/i]);
   const people=findTextNumber(text,[/(?:pessoas)[^\d]{0,120}(?:cadastrad|inscrit)[^\d]{0,40}([\d\.]+)/i,/([\d\.]+)\s*pessoas[^\n]{0,100}cadastro [uú]nico/i]);
   const low=findTextNumber(text,[/(?:baixa renda|pobreza)[^\d]{0,120}([\d\.]+)\s*(?:fam[ií]lias|pessoas)/i,/([\d\.]+)\s*(?:fam[ií]lias|pessoas)[^\n]{0,120}(?:baixa renda|pobreza)/i]);
   const street=findTextNumber(text,[/(?:situa[cç][aã]o de rua)[^\d]{0,120}([\d\.]+)\s*(?:pessoas|fam[ií]lias)/i,/([\d\.]+)\s*(?:pessoas|fam[ií]lias)[^\n]{0,120}(?:situa[cç][aã]o de rua)/i]);
-  if(![families,people,low,street].some(finite))throw new Error('Cadastro Único: página respondeu, mas sem indicadores estruturados');
+  if(![families,people,low,street].some(finite)){const vis=await cadunicoVisData(m);if(vis)return vis;throw new Error('Cadastro Único: página respondeu, mas sem indicadores estruturados');}
   return {families:safe(families),people:safe(people),lowIncome:safe(low),street:safe(street),source:'MDS · RI Social / SAGICAD'};
 }
 async function getBudget(m){
@@ -890,6 +935,7 @@ async function diagnostic(m) {
 
   return {
     ok:true,
+    version:'1.2.1',
     municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},
     generatedAt:new Date().toISOString(),
     cacheTtlSeconds:CACHE_TTL/1000,
@@ -915,7 +961,7 @@ const server=http.createServer(async (req,res) => {
       return json(res,200,{
         ok:true,
         service:'Diagnóstico Territorial Integrado · Rede Cidadã',
-        version:'1.2.0',
+        version:'1.2.1',
         endpoints:['/api/health','/api/diagnostico/{codigoIBGE}','/api/ivcad/{codigoIBGE}'],
         time:new Date().toISOString()
       });
