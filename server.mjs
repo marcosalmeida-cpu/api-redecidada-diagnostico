@@ -13,6 +13,11 @@ const IBGE_AGG='https://servicodados.ibge.gov.br/api/v3/agregados';
 const SICONFI='https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca';
 const TRANSFERE='https://api-publica.transferegov.gestao.gov.br/especiais/';
 
+const VIS_FAMILIAS_RENDA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWChLNe09Gv17llja2AYWx7YmqqdH9%2BaWGEkWuXbWTZ6ayanbWUndqdiLSYmcrGbtCen9DgiG%2BiqaGt3nSIwayaes%2BS0J6gvKuEZJurlp60n666qpKSx5TWsJiYtrOVqLuadbSswrtam7bHlNecY5SrrGVweJSd2p2ItJiZysZu0J6f0OCIb6Kpoa3edIjBrJp6z5LQnqC8rIFkm6uWnrSfrrqqkpLHlNawmJi2s5Wou5p1tKzCu1qfvdGWyW5njdp%2Fa26Dm5vlrLKJnY7D1JileJm%2B58CZd4Oor%2BZcu62djsTAZptuksDcsW%2BiqaGt3nSzr6OgvJxu0J6f0OCIb6%2B9ol30WrC9mJm81JbPZXPL2rOVqaeYm91lfXdXWnfEosupmNDeslx8tpSg2qasgWhetsSUzmljhpzKb6Kpoa3edLOvo6C8nG7Qnp%2FQ4Ihvr72itsqurryrlrvCl89dp8zvrqBcrJpa35q6EeSZwMKmiqah0N6%2FnbCpqFrnqG2RmJG41KfcrFMgFbudn7dYi%2B6au8KgkbjFmIqhmH3hrqH%2F9aGj2qxts6RNysqn3572BD7wo1ysmlrescHAnJq4gaPZn6XC9a5Upbaoneuiwa%2BqTcXQU62el77uwaaraPjU56KwvVp%2BzMKh3qaXvt%2ByVKCtVaDaphD7o5a41FPPqlPQ5MGpnQvc%2FRyobbKcTcfQldyirb6btqKvq6ej7ZrAbqWcd6SUzp6m0e28VP%2Fio6PcqHCfrI7F1ZzOnpfCm7GZXK6WpzzmubeYoHfGoIqwnNHwrvfjC9ipmZ2ybqecudOY5J5ffe6ym7G2mamZmm20mJbPwlPOrFOt7bybrqmim5l7vLqqjnenlNcA4Mnkrl5oaJ6o7Jy%2Ft6uOyoGh2V12vt%2Bup7C6pFo807u3mpx6sqjLq6fG366YoWiZn5mfrrv62sPKlN1dl8Kbr5WlwJZa6567sphXgYGc2LCWz%2BTBla9oo6mZfK6ymKDL06KKAM3L5LCjX5mqm%2BettrKYkbyBl89dmb7oEOGosZatmZy8u1efvM%2BXy12jwu1tl524nq7aWbqzpaC4zVPLsfYGm7qZpbdVrdqlEO%2BplsaOoC3qocbovFRkmKSc657Hr1dYd6OU07WUfe2yoqCpXlrip8CxqZbLwqaKq6J9vq6YnbuprOhZEOillrrQVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd68oVy6mqjdmm2%2BnJ93xJTapqe%2Bm7qZqruWppmasLekjnfFmIqqmMbqbaedtPjb66K8e6TwBM%2Bc16xdh6Vtnaq7mKzira7BV5vGgXbLoZTQ77%2BjXAvPqOKcvMqnaNPdr5xtZZCofWdpeGaOqWmHfmdnh5GNpQ%3D%3D';
+const VIS_BOLSA_FAMILIA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bV%2Bgmxl05Kv2rmg2a19ZW51ZmymaX6JaV2JlmCbb2CNrMmlsKyamembs61ojMfGpt2slLysiJqdtKiftJ%2BuuqqSkpyZy6mmwraIp7G1WKvtnbKtp4%2B9wGTJrZjQ7ryVm3pwoNqlwLNyk7jNps94bsPcuaehg3Ct7qZwv6uRvMCjzKOSjtq9ma%2B7pJvYbIi0mJnKxm7Qnp%2FQ4Ihvoqmhrd50iMGsmnrSp86iks3ds5Ntp6Wf7Ky8r5ZhkseU1rCYmOGuoK%2BtcHXfmrnBnGiS1KjXYKTR37KTrKqbmaqYvbOqoMbCkp94mb7nwJl3rpam7J6IiZ2Ow9SYpXim0uhwpbCsmpnpm7OtaIzHxqbdrJS8sYianbSon7SfrrqqkpKcmcuppsK2iKextVir7Z2yraePvcBkya2Y0O68lZt%2FcKDapcCzcpO4zabPeG7D3LmnoYNwre6mcL%2BrkbzAo8yjko7avZmvu6Sb2Kaut6qMjpyZy6mmwrazlai7mnW0n666qpKSnKbfqq%2Bu8K6isLGZm92ebbKcTb3CoC3qn8bcwFSeraOf36Kwt%2FrOycqU3V2XzJudpquvp5vmmm2QppnKwlOwnqAgKLmdnWibqeumrrKYTcfQpYpuU8bpwZmjupao7Z5tfVeixcqjz7CmzNy2p1%2BZqpvnrbaymJG8gZfPXZm%2B6BDhqLGWrZmbsryck8DEnC3epcbcwFSgt1WK66i0wJiauIF12ammvpuTlakL4qbimm20pp%2FEwpfLXaPM7W1mXLGjrt6gv6%2BlobzUVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd2yoqGunp3i%2FO7AoI7KgZfZXYPP6rSmnbWWWruoucGYTZ3CoC3qn8bcbZqruqKb3Zptvqafd5RT06unwuK%2Flaq8mq2cisKvpaHAxZTOolPB4G2anbX45%2BWirsFXj7zPmNCmlsY%2B7qalqaha3ahtnqmcvtOU155Tn%2Bq5p51oe5vm%2FPq6oI53x6LcqpTB3G2kq7pVbpmiu8KclMnCod6ipoDMwpWqvJ6e2p2ybpuSd8eU1wDgyeSup1yqmqjen7axoPD405zLsFPB6m2ErrecrNqmrm55nMPUlIqDlMo%2B%2BqClqVWg6Ku6r5uOd9Gi3F1ofeS7qKGvp5vnrbLBWn7MwqHeppe%2B37JUoK1VoNqmEPujlrjUU8yiocLhtpelC9as4prAbpucd7Gl2aSlvuiuVH63oa3aWZOvpPAEzZzLXZnM7bqVoKlVquirbYRXlsXVmNGvlMvvsqdfmaqb5622spiRvIGXz12ZvugQ4aixlq2Zm7K8nJPAxJwt3qXG3MBUoLdViuuotMCYmriBddmppr6bk5WpC%2BKm4ppttKafxMKXy12jzO1ta1yxo67eoL%2BvpaG81Fa7spTL77aYnayaWt2ebbSYmhoOn9Oepn3dsqKhrp6d4vzuwKCOyoGX2V2Dz%2Bq0pp21llq7qLnBmE2dwqAt6p%2FG3G2aq7qim92abb6mn3eZU9myU8rctqdcsaOu3qC%2Fr6WhvNSv2niv2feI';
+const VIS_PCD_CADUNICO='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWEgLNe09Gv17lljax%2FYWyAYmqqdH9%2BaWKEkWaXbWTZ6aykobuomd2es7ealrzPks2el5jhrqCvrXCg2qXAs3JovcKf3aJumO7CoV%2B2lKrerMCtm5K9ypbToqG87rKhrq2oqticrrJyk7jNps94mb7nwJl3g5ub5ayyiXKgzM6vu7KUy%2B%2B2mJ2smlrdnm2%2BnKDK0JTdXZbM6G2Yoa6eneL897yalriBnNiwls%2FkwZWvaKOpmXyuspigy9OiigDNy%2BSwo1%2BYmq3sqK7BV5DGzlPNnqDN6m2YoWient6nwbedlrrC9hEA1sybsZmisZijPOO7saCOd9SY112lwu69o6%2B8lrbpdMnKs2g%3D';
+const VIS_BPC='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=PYfnoX';
+
 const clean=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const safe=v=>finite(v)?Number(v):null;
@@ -114,6 +119,40 @@ async function liveEducation(m){
 function stripHtml(s){return String(s||'').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()}
 function htmlTables(html){const out=[];for(const tm of String(html||'').matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)){const rows=[];for(const rm of tm[1].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){const cells=[...rm[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>stripHtml(x[1]));if(cells.length)rows.push(cells)}if(rows.length)out.push(rows)}return out}
 function periodCell(v){const m=String(v||'').match(/(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/);return m?{month:Number(m[1]),year:Number(m[2]),key:Number(m[2])*100+Number(m[1])}:null}
+
+function visMunicipalUrl(base,m){
+  const u=new URL(base);
+  u.searchParams.set('ag','m');
+  u.searchParams.set('codigo',String(m.ibge).slice(0,6));
+  return u.toString();
+}
+function latestVisRow(html,minValues=1){
+  const found=[];
+  for(const rows of htmlTables(html)){
+    for(const row of rows){
+      const pi=row.findIndex(x=>periodCell(x));
+      if(pi<0)continue;
+      const p=periodCell(row[pi]);
+      const values=[];
+      for(let i=pi+1;i<row.length;i++){
+        const v=num(row[i]);
+        if(finite(v))values.push(Number(v));
+      }
+      if(values.length>=minValues)found.push({...p,values,row});
+    }
+  }
+  found.sort((a,b)=>b.key-a.key || b.values.length-a.values.length);
+  return found[0]||null;
+}
+async function visMunicipalLatest(base,m,minValues=1,timeout=10000){
+  try{
+    const html=await fetchText(visMunicipalUrl(base,m),timeout);
+    const text=stripHtml(html);
+    if(m.nome&&!clean(text).includes(clean(m.nome)))return null;
+    return latestVisRow(html,minValues);
+  }catch{return null}
+}
+
 function latestSeries(rows){const found=[];for(const row of rows||[]){const pi=row.findIndex(x=>periodCell(x));if(pi<0)continue;const p=periodCell(row[pi]);let value=NaN;for(let i=pi+1;i<row.length;i++){const v=num(row[i]);if(finite(v)){value=Number(v);break}}if(finite(value))found.push({...p,value})}found.sort((a,b)=>b.key-a.key);return found[0]||null}
 async function ibgeExactCategoryPercent(table,m,labels){
   try{
@@ -169,33 +208,51 @@ async function liveConditions(m){
   return ok?result('condicoes',snap?'ok':'partial',out,snap?'IBGE + SINISA + SUS snapshot':'IBGE · Censo 2022','Estatísticas domiciliares carregadas automaticamente; saúde e SINISA entram quando o snapshot estiver disponível.',out.reference||'Censo 2022'):result('condicoes','bad',null,'IBGE + SINISA + SUS','Condições de vida não responderam nesta consulta.','');
 }
 async function liveCadunico(m){
-  const snap=await snapshot('cadunico',m.ibge);if(snap)return snap;
-  const code6=String(m.ibge).slice(0,6);
-  try{const url='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=Sp8th1&ag=m&codigo='+code6;const html=await fetchText(url,9000);const text=stripHtml(html);if(m.nome&&!clean(text).includes(clean(m.nome)))throw new Error('município divergente');const series=htmlTables(html).map(latestSeries).filter(Boolean);const poverty=series[0]||null,low=series[1]||null,above=series[2]||null;const ref=[poverty,low,above].filter(Boolean).sort((a,b)=>b.key-a.key)[0]||null;const families=(low&&above&&low.key===above.key)?low.value+above.value:null;if([families,low?.value,poverty?.value].some(finite))return {families:safe(families),lowIncomeFamilies:safe(low?.value),povertyFamilies:safe(poverty?.value),aboveHalfFamilies:safe(above?.value),people:null,street:null,reference:ref?(String(ref.month).padStart(2,'0')+'/'+ref.year):'',source:'MDS · VIS DATA 3'}}catch{}
-  try{
-    const urls=[
-      'https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo='+m.ibge,
-      'https://aplicacoes.mds.gov.br/sagi/RIv3/geral/index.php?codigo='+String(m.ibge).slice(0,6)
-    ];
-    for(const url of urls){
-      try{
-        const text=stripHtml(await fetchText(url,8000));
-        const pick=(rxs)=>{for(const rx of rxs){const mm=text.match(rx);if(mm){const v=num(mm[1]);if(finite(v))return Number(v)}}return null};
-        const families=pick([/(\d[\d\.]{1,})\s*fam[ií]lias[^.]{0,100}cadastro [uú]nico/i,/fam[ií]lias[^\d]{0,120}(\d[\d\.]{1,})/i]);
-        const people=pick([/(\d[\d\.]{1,})\s*pessoas[^.]{0,100}cadastro [uú]nico/i,/pessoas[^\d]{0,120}(\d[\d\.]{1,})/i]);
-        const low=pick([/(\d[\d\.]{1,})\s*(?:fam[ií]lias|pessoas)[^.]{0,120}baixa renda/i,/baixa renda[^\d]{0,120}(\d[\d\.]{1,})/i]);
-        if([families,people,low].some(finite))return {families:safe(families),people:safe(people),lowIncomeFamilies:safe(low),povertyFamilies:null,street:null,reference:'',source:'MDS · RI Social'};
-      }catch{}
-    }
-  }catch{}
-  return null;
+  const snap=await snapshot('cadunico',m.ibge);
+  if(snap)return snap;
+  const [income,pbf,pcd,bpc]=await Promise.all([
+    visMunicipalLatest(VIS_FAMILIAS_RENDA,m,3,10000),
+    visMunicipalLatest(VIS_BOLSA_FAMILIA,m,8,10000),
+    visMunicipalLatest(VIS_PCD_CADUNICO,m,1,10000),
+    visMunicipalLatest(VIS_BPC,m,5,10000)
+  ]);
+  const out={source:'MDS · VIS DATA',notes:[]};
+  if(income){
+    const poverty=income.values[0],uptoHalf=income.values[1],aboveHalf=income.values[2];
+    out.povertyFamilies=safe(poverty);
+    out.lowIncomeFamilies=safe(Math.max(0,uptoHalf-poverty));
+    out.upToHalfMinimumWageFamilies=safe(uptoHalf);
+    out.aboveHalfFamilies=safe(aboveHalf);
+    out.families=safe(uptoHalf+aboveHalf);
+    out.reference=String(income.month).padStart(2,'0')+'/'+income.year;
+    out.extremePovertyFamilies=null;
+    out.notes.push('Desde março de 2023, o conjunto aberto nacional não publica extrema pobreza separadamente; pobreza corresponde à linha administrativa do Programa Bolsa Família.');
+  }
+  if(pbf){
+    out.bolsaFamiliaFamilies=safe(pbf.values.slice(0,8).reduce((s,v)=>s+(finite(v)?Number(v):0),0));
+    out.bolsaFamiliaReference=String(pbf.month).padStart(2,'0')+'/'+pbf.year;
+  }
+  if(pcd){
+    out.pcdPeople=safe(pcd.values[0]);
+    out.pcdReference=String(pcd.month).padStart(2,'0')+'/'+pcd.year;
+  }
+  if(bpc){
+    out.bpcPcd=safe(bpc.values[0]);
+    out.bpcElderly=safe(bpc.values[1]);
+    out.bpcTotal=safe(bpc.values[4]);
+    out.bpcReference=String(bpc.month).padStart(2,'0')+'/'+bpc.year;
+    out.bpcBasis='município pagador';
+  }
+  const useful=[out.families,out.povertyFamilies,out.lowIncomeFamilies,out.bolsaFamiliaFamilies,out.pcdPeople,out.bpcTotal].some(finite);
+  return useful?out:null;
 }
-async function liveVulnerability(m){const cad=await liveCadunico(m),iv=await snapshot('ivcad',m.ibge);if(cad||iv)return result('vulnerabilidade',cad?(iv?'ok':'partial'):'partial',{cadunico:cad||null,ivcad:iv||null},'MDS · Cadastro Único / IVCAD',cad?'Cadastro Único consultado automaticamente.':'IVCAD disponível sem Cadastro Único.',cad?.reference||iv?.reference||'');return result('vulnerabilidade','bad',{cadunico:null,ivcad:null},'MDS · Cadastro Único / IVCAD','Cadastro Único não respondeu e não há snapshot local. IVCAD não bloqueia os demais módulos.','')}
-async function snapshotModule(name,m,source,label){
-  const d=await snapshot(name,m.ibge);
-  return d
-    ? result(name,'ok',d,source,'Base municipal carregada.',d.reference||'')
-    : result(name,'pending',null,source,label+' ainda não está no snapshot periódico. O restante do diagnóstico continua normalmente.','');
+async function liveVulnerability(m){
+  const cad=await liveCadunico(m);
+  if(cad){
+    const complete=[cad.families,cad.bolsaFamiliaFamilies,cad.pcdPeople,cad.bpcTotal,cad.povertyFamilies,cad.lowIncomeFamilies].filter(finite).length;
+    return result('vulnerabilidade',complete>=5?'ok':'partial',{cadunico:cad},'MDS · Cadastro Único / Bolsa Família / BPC','Indicadores sociais consultados automaticamente em fontes agregadas do MDS.',cad.reference||cad.bolsaFamiliaReference||cad.bpcReference||'');
+  }
+  return result('vulnerabilidade','bad',{cadunico:null},'MDS · Cadastro Único / Bolsa Família / BPC','As consultas agregadas do MDS não responderam nesta tentativa.','');
 }
 function dca(items,code){
   const liq=items.filter(x=>clean(x.coluna).includes('despesas liquidadas'));
@@ -289,13 +346,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.4.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.5.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.4.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.5.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
