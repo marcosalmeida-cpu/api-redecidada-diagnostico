@@ -17,6 +17,8 @@ const VIS_FAMILIAS_RENDA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%
 const VIS_BOLSA_FAMILIA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bV%2Bgmxl05Kv2rmg2a19ZW51ZmymaX6JaV2JlmCbb2CNrMmlsKyamembs61ojMfGpt2slLysiJqdtKiftJ%2BuuqqSkpyZy6mmwraIp7G1WKvtnbKtp4%2B9wGTJrZjQ7ryVm3pwoNqlwLNyk7jNps94bsPcuaehg3Ct7qZwv6uRvMCjzKOSjtq9ma%2B7pJvYbIi0mJnKxm7Qnp%2FQ4Ihvoqmhrd50iMGsmnrSp86iks3ds5Ntp6Wf7Ky8r5ZhkseU1rCYmOGuoK%2BtcHXfmrnBnGiS1KjXYKTR37KTrKqbmaqYvbOqoMbCkp94mb7nwJl3rpam7J6IiZ2Ow9SYpXim0uhwpbCsmpnpm7OtaIzHxqbdrJS8sYianbSon7SfrrqqkpKcmcuppsK2iKextVir7Z2yraePvcBkya2Y0O68lZt%2FcKDapcCzcpO4zabPeG7D3LmnoYNwre6mcL%2BrkbzAo8yjko7avZmvu6Sb2Kaut6qMjpyZy6mmwrazlai7mnW0n666qpKSnKbfqq%2Bu8K6isLGZm92ebbKcTb3CoC3qn8bcwFSeraOf36Kwt%2FrOycqU3V2XzJudpquvp5vmmm2QppnKwlOwnqAgKLmdnWibqeumrrKYTcfQpYpuU8bpwZmjupao7Z5tfVeixcqjz7CmzNy2p1%2BZqpvnrbaymJG8gZfPXZm%2B6BDhqLGWrZmbsryck8DEnC3epcbcwFSgt1WK66i0wJiauIF12ammvpuTlakL4qbimm20pp%2FEwpfLXaPM7W1mXLGjrt6gv6%2BlobzUVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd2yoqGunp3i%2FO7AoI7KgZfZXYPP6rSmnbWWWruoucGYTZ3CoC3qn8bcbZqruqKb3Zptvqafd5RT06unwuK%2Flaq8mq2cisKvpaHAxZTOolPB4G2anbX45%2BWirsFXj7zPmNCmlsY%2B7qalqaha3ahtnqmcvtOU155Tn%2Bq5p51oe5vm%2FPq6oI53x6LcqpTB3G2kq7pVbpmiu8KclMnCod6ipoDMwpWqvJ6e2p2ybpuSd8eU1wDgyeSup1yqmqjen7axoPD405zLsFPB6m2ErrecrNqmrm55nMPUlIqDlMo%2B%2BqClqVWg6Ku6r5uOd9Gi3F1ofeS7qKGvp5vnrbLBWn7MwqHeppe%2B37JUoK1VoNqmEPujlrjUU8yiocLhtpelC9as4prAbpucd7Gl2aSlvuiuVH63oa3aWZOvpPAEzZzLXZnM7bqVoKlVquirbYRXlsXVmNGvlMvvsqdfmaqb5622spiRvIGXz12ZvugQ4aixlq2Zm7K8nJPAxJwt3qXG3MBUoLdViuuotMCYmriBddmppr6bk5WpC%2BKm4ppttKafxMKXy12jzO1ta1yxo67eoL%2BvpaG81Fa7spTL77aYnayaWt2ebbSYmhoOn9Oepn3dsqKhrp6d4vzuwKCOyoGX2V2Dz%2Bq0pp21llq7qLnBmE2dwqAt6p%2FG3G2aq7qim92abb6mn3eZU9myU8rctqdcsaOu3qC%2Fr6WhvNSv2niv2feI';
 const VIS_PCD_CADUNICO='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWEgLNe09Gv17lljax%2FYWyAYmqqdH9%2BaWKEkWaXbWTZ6aykobuomd2es7ealrzPks2el5jhrqCvrXCg2qXAs3JovcKf3aJumO7CoV%2B2lKrerMCtm5K9ypbToqG87rKhrq2oqticrrJyk7jNps94mb7nwJl3g5ub5ayyiXKgzM6vu7KUy%2B%2B2mJ2smlrdnm2%2BnKDK0JTdXZbM6G2Yoa6eneL897yalriBnNiwls%2FkwZWvaKOpmXyuspigy9OiigDNy%2BSwo1%2BYmq3sqK7BV5DGzlPNnqDN6m2YoWient6nwbedlrrC9hEA1sybsZmisZijPOO7saCOd9SY112lwu69o6%2B8lrbpdMnKs2g%3D';
 const VIS_BPC='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?vsc=PYfnoX';
+const CECAD_MAIN='https://cecad.cidadania.gov.br/painel03.php';
+const CECAD_SERIES='https://cecad.cidadania.gov.br/agregado/resumovariavelCecad.php';
 const VIS_BPC_CADUNICO='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOhlMHqwJOsuqSe9XGEymipx92g5m9jjrR6ZG11ZWu0a32AbFqIkmCabq%2FTtIBnd66WpuyeiLSYmcrGbqWjlMnusm93u6qnnK%2BGgWtovcKf3aJuw9y5p6GDcKDapcCzcmjK1qCNs2yQsIianbSon7SfrrqqkpKcmcuppsK2iKextbF83qeytKCQwCTU3Kai0JuPhH9oo6mZfK6ymKDL06KKAM3L5LCjX4qaqN6ftrGg8PjTnNmwU5%2FLkFSqt1V92p2uwaufxoH2BKucwOptYVyYeH6ce7K8nJPAxJwt3qXG6sBUfph4WueobZGYkbjUp9ysUyAVu52ft1VnmYKxvaqc09Fu5rmvmA%3D%3D';
 
 const clean=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
@@ -30,16 +32,17 @@ function num(v){
   else s=s.replace(/[^0-9.\-]/g,'');
   const n=Number(s);return Number.isFinite(n)?n:NaN;
 }
-async function request(url,ms=12000){
+async function request(url,ms=12000,extraHeaders={}){
   const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),ms);
   try{
-    const r=await fetch(url,{signal:ctrl.signal,headers:{'user-agent':'RedeCidada-Diagnostico/2.0','accept':'application/json,*/*'}});
+    const r=await fetch(url,{signal:ctrl.signal,headers:{'user-agent':'RedeCidada-Diagnostico/2.0','accept':'application/json,*/*',...extraHeaders}});
     if(!r.ok)throw new Error(String(r.status)+' '+r.statusText);
     return r;
   }finally{clearTimeout(t)}
 }
 const fetchJson=async(url,ms=12000)=>(await request(url,ms)).json();
 const fetchText=async(url,ms=10000)=>(await request(url,ms)).text();
+const fetchBrowserText=async(url,ms=12000)=>(await request(url,ms,{'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36','accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8','accept-language':'pt-BR,pt;q=0.9,en;q=0.7','referer':'https://cecad.cidadania.gov.br/'})).text();
 function send(res,status,body){
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type','cache-control':'no-store'});
   res.end(JSON.stringify(body));
@@ -250,6 +253,64 @@ async function liveConditions(m){
   const ok=[out.households,out.avgResidents,out.waterPercent,out.sewerPercent,out.wastePercent,out.apsCoverage,out.ubs,out.caps].some(finite);
   return ok?result('condicoes',snap?'ok':'partial',out,snap?'IBGE + SINISA + SUS snapshot':'IBGE · Censo 2022','Estatísticas domiciliares carregadas automaticamente; saúde e SINISA entram quando o snapshot estiver disponível.',out.reference||'Censo 2022'):result('condicoes','bad',null,'IBGE + SINISA + SUS','Condições de vida não responderam nesta consulta.','');
 }
+function htmlTagValues(block,tag='h5'){
+  return [...String(block||'').matchAll(new RegExp('<'+tag+'\\b[^>]*>([\\s\\S]*?)<\\/'+tag+'>','gi'))]
+    .map(x=>stripHtml(x[1]))
+    .map(visNum)
+    .filter(Number.isFinite);
+}
+function cecadBlocks(html){
+  const hits=[...String(html||'').matchAll(/<div\\b[^>]*id=["'](dados-cadastro-[^"']+)["'][^>]*>/gi)],out=[];
+  for(let i=0;i<hits.length;i++){
+    const start=(hits[i].index||0),end=i+1<hits.length?(hits[i+1].index||html.length):html.length;
+    const raw=html.slice(start,end),text=stripHtml(raw),values=htmlTagValues(raw,'h5');
+    out.push({id:hits[i][1],text,clean:clean(text),values});
+  }
+  return out;
+}
+function cecadMetric(blocks,rx,index=0){
+  const b=(blocks||[]).find(x=>rx.test(x.clean));
+  return b&&Number.isFinite(b.values?.[index])?Number(b.values[index]):null;
+}
+function cecadReference(blocks){
+  for(const b of blocks||[]){const m=String(b.text||'').match(/(0?[1-9]|1[0-2])\\/(20\\d{2})/);if(m)return String(m[1]).padStart(2,'0')+'/'+m[2]}
+  return '';
+}
+async function cecadSummary(m){
+  try{
+    const u=new URL(CECAD_MAIN);
+    u.searchParams.set('oik','1');
+    u.searchParams.set('p_ibge',String(m.ibge).slice(0,6));
+    const html=await fetchBrowserText(u.toString(),12000),blocks=cecadBlocks(html);
+    const out={source:'MDS · CECAD 2.0',reference:cecadReference(blocks)};
+    out.families=safe(cecadMetric(blocks,/familias cadastradas(?!.*pobreza|.*baixa renda)/));
+    out.povertyFamilies=safe(cecadMetric(blocks,/situacao de pobreza/));
+    out.lowIncomeFamilies=safe(cecadMetric(blocks,/baixa renda/));
+    out.aboveHalfFamilies=safe(cecadMetric(blocks,/acima de (?:1\\/2|meio).*salario/));
+    if(!finite(out.families)){
+      const text=stripHtml(html).replace(/(0?[1-9]|1[0-2])\\/(20\\d{2})/g,' ');
+      const m1=text.match(/Fam[ií]lias Cadastradas[^0-9]{0,120}(\\d{1,3}(?:\\.\\d{3})+|\\d+)/i);
+      if(m1)out.families=safe(visNum(m1[1]));
+    }
+    if(!finite(out.povertyFamilies)){
+      const text=stripHtml(html);
+      const m2=text.match(/Fam[ií]lias[^.]{0,100}situa[cç][aã]o de Pobreza[^0-9]{0,100}(\\d{1,3}(?:\\.\\d{3})+|\\d+)/i);
+      if(m2)out.povertyFamilies=safe(visNum(m2[1]));
+    }
+    return [out.families,out.povertyFamilies,out.lowIncomeFamilies,out.aboveHalfFamilies].some(finite)?out:null;
+  }catch{return null}
+}
+async function cecadPbf(m){
+  try{
+    const u=new URL(CECAD_SERIES);
+    u.searchParams.set('id','79');
+    u.searchParams.set('p_ibge',String(m.ibge));
+    u.searchParams.set('uf_ibge',String(m.ibge).slice(0,2));
+    const html=await fetchBrowserText(u.toString(),12000),row=latestVisRow(html,1);
+    if(!row)return null;
+    return {families:safe(row.values[0]),reference:String(row.month).padStart(2,'0')+'/'+row.year};
+  }catch{return null}
+}
 async function liveDisability(m){
   try{
     const meta=await ibgeMeta(10131);
@@ -262,43 +323,26 @@ async function liveDisability(m){
 async function liveCadunico(m){
   const snap=await snapshot('cadunico',m.ibge);
   if(snap)return snap;
-  const [incomeMetrics,pbfMetrics,bpcMetrics,pcdCensus]=await Promise.all([
-    visMunicipalMetrics(VIS_FAMILIAS_RENDA,m,12000),
-    visMunicipalMetrics(VIS_BOLSA_FAMILIA,m,12000),
+  const [cecad,pbf,bpcMetrics,pcdCensus]=await Promise.all([
+    cecadSummary(m),
+    cecadPbf(m),
     visMunicipalMetrics(VIS_BPC_CADUNICO,m,12000),
     liveDisability(m)
   ]);
-  const out={source:'MDS · VIS DATA 3 beta + IBGE Censo 2022',notes:[]};
+  const out={source:'MDS · CECAD 2.0 + IBGE Censo 2022',notes:[]};
 
-  if(incomeMetrics.length){
-    const poverty=visMetric(incomeMetrics,/familias cadastradas.*situacao de pobreza|situacao de pobreza.*familias/);
-    const uptoHalf=visMetric(incomeMetrics,/ate meio salario|minimo.*pobreza.*baixa renda|pobreza \+ baixa renda/);
-    const aboveHalf=visMetric(incomeMetrics,/acima de meio salario|minimo/);
-    const latest=incomeMetrics.slice().sort((a,b)=>b.key-a.key)[0];
-    if(finite(poverty))out.povertyFamilies=safe(poverty);
-    if(finite(uptoHalf))out.upToHalfMinimumWageFamilies=safe(uptoHalf);
-    if(finite(aboveHalf))out.aboveHalfFamilies=safe(aboveHalf);
-    if(finite(uptoHalf)&&finite(poverty))out.lowIncomeFamilies=safe(Math.max(0,Number(uptoHalf)-Number(poverty)));
-    if(finite(uptoHalf)&&finite(aboveHalf))out.families=safe(Number(uptoHalf)+Number(aboveHalf));
-    if(latest)out.reference=String(latest.month).padStart(2,'0')+'/'+latest.year;
-    out.extremePovertyFamilies=null;
-    out.notes.push('A base atual a partir de mar/2023 não separa extrema pobreza; o campo permanece n/d.');
+  if(cecad){
+    Object.assign(out,cecad);
+    if(finite(out.families)&&finite(out.povertyFamilies)&&finite(out.lowIncomeFamilies)&&!finite(out.upToHalfMinimumWageFamilies))
+      out.upToHalfMinimumWageFamilies=safe(Number(out.povertyFamilies)+Number(out.lowIncomeFamilies));
   }
 
-  if(pbfMetrics.length){
-    const familySizeRows=pbfMetrics.filter(x=>/familias beneficiarias.*formada por|unipessoais|8 ou mais integrantes/.test(x.context));
-    const unique=[];
-    const seen=new Set();
-    for(const x of familySizeRows){
-      const key=x.context.slice(-220);
-      if(!seen.has(key)&&finite(x.values?.[0])){seen.add(key);unique.push(Number(x.values[0]))}
-    }
-    if(unique.length>=4)out.bolsaFamiliaFamilies=safe(unique.reduce((a,b)=>a+b,0));
-    const latest=pbfMetrics.slice().sort((a,b)=>b.key-a.key)[0];
-    if(latest)out.bolsaFamiliaReference=String(latest.month).padStart(2,'0')+'/'+latest.year;
+  if(pbf){
+    out.bolsaFamiliaFamilies=safe(pbf.families);
+    out.bolsaFamiliaReference=pbf.reference;
   }
 
-  if(bpcMetrics.length){
+  if(Array.isArray(bpcMetrics)&&bpcMetrics.length){
     out.bpcTotal=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico(?!.*pcd|.*idoso)/));
     out.bpcPcd=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*pcd/));
     out.bpcElderly=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*idoso/));
@@ -313,6 +357,9 @@ async function liveCadunico(m){
     out.pcdBasis='IBGE · pessoas de 2 anos ou mais com deficiência';
   }
 
+  out.extremePovertyFamilies=null;
+  out.notes.push('Extrema pobreza permanece n/d quando a base agregada atual não publica o recorte separadamente.');
+  out.mapaSocialUrl='https://mapa-social.mds.gov.br/';
   const useful=[out.families,out.povertyFamilies,out.lowIncomeFamilies,out.bolsaFamiliaFamilies,out.pcdPeople,out.bpcTotal].some(finite);
   return useful?out:null;
 }
@@ -416,13 +463,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.7.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.8.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.7.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.8.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
