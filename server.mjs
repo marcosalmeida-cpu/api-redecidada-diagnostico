@@ -288,7 +288,7 @@ async function cecadSummary(m){
   try{
     const base=new URL(CECAD_MAIN);
     base.searchParams.set('oik','1');
-    base.searchParams.set('p_ibge',String(m.ibge));
+    base.searchParams.set('p_ibge',String(m.ibge).slice(0,6));
 
     const uCad=new URL(base.toString());
     uCad.searchParams.set('p_escopo','2');
@@ -352,6 +352,29 @@ async function cecadSeries(id,m){
     return {value:safe(row.values[0]),reference:String(row.month).padStart(2,'0')+'/'+row.year};
   }catch{return null}
 }
+async function cecadBpc(m){
+  try{
+    const u=new URL('https://cecad.cidadania.gov.br/agregado/resumovariavel_3a.php');
+    u.searchParams.set('cabeca','140');
+    u.searchParams.append('id[]','34');
+    u.searchParams.append('id[]','135');
+    u.searchParams.set('p_ibge',String(m.ibge));
+    u.searchParams.set('uf_ibge',String(m.ibge).slice(0,2));
+    const html=await fetchBrowserText(u.toString(),15000);
+    const row=latestVisRow(html,2);
+    if(!row||row.values.length<2)return null;
+    const pcd=safe(row.values[0]),elderly=safe(row.values[1]);
+    const total=(finite(pcd)||finite(elderly))?safe((Number(pcd)||0)+(Number(elderly)||0)):null;
+    return {
+      total,
+      pcd,
+      elderly,
+      reference:String(row.month).padStart(2,'0')+'/'+row.year,
+      source:'MDS · CECAD 2.0',
+      basis:'beneficiários do BPC por município · PcD + idosos'
+    };
+  }catch{return null}
+}
 async function liveDisability(m){
   try{
     const meta=await ibgeMeta(10131);
@@ -362,11 +385,12 @@ async function liveDisability(m){
   }catch{return null}
 }
 async function liveCadunico(m){
-  const [snap,benefits,cecad,pbf,bpcMetrics,pcdCensus,obs,street,extreme,povertySeries,lowSeries,aboveSeries,updated]=await Promise.all([
+  const [snap,benefits,cecad,pbf,bpcDirect,bpcMetrics,pcdCensus,obs,street,extreme,povertySeries,lowSeries,aboveSeries,updated]=await Promise.all([
     snapshot('cadunico',m.ibge),
     snapshot('beneficios_sociais',m.ibge),
     cecadSummary(m),
     cecadPbf(m),
+    cecadBpc(m),
     visMunicipalMetrics(VIS_BPC_CADUNICO,m,12000),
     liveDisability(m),
     observatorioSnapshot(m),
@@ -425,13 +449,21 @@ async function liveCadunico(m){
     }
   }
 
-  if(Array.isArray(bpcMetrics)&&bpcMetrics.length){
+  if(bpcDirect&&finite(bpcDirect.total)){
+    out.bpcTotal=safe(bpcDirect.total);
+    out.bpcPcd=safe(bpcDirect.pcd);
+    out.bpcElderly=safe(bpcDirect.elderly);
+    out.bpcReference=bpcDirect.reference||'';
+    out.bpcBasis=bpcDirect.basis;
+    out.bpcSource=bpcDirect.source;
+  }else if(Array.isArray(bpcMetrics)&&bpcMetrics.length){
     out.bpcTotal=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico(?!.*pcd|.*idoso)/));
     out.bpcPcd=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*pcd/));
     out.bpcElderly=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*idoso/));
     const latest=bpcMetrics.slice().sort((a,b)=>b.key-a.key)[0];
     if(latest)out.bpcReference=String(latest.month).padStart(2,'0')+'/'+latest.year;
     out.bpcBasis='beneficiários do BPC inscritos no Cadastro Único';
+    out.bpcSource='MDS · VIS DATA';
   }
 
   if(finite(pcdCensus)){
@@ -548,13 +580,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.11.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.12.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.11.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.12.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
