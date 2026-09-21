@@ -286,48 +286,45 @@ function cecadReference(blocks){
 }
 async function cecadSummary(m){
   try{
-    const base=new URL(CECAD_MAIN);
-    base.searchParams.set('oik','1');
-    base.searchParams.set('p_ibge',String(m.ibge).slice(0,6));
+    const u=new URL('https://cecad.cidadania.gov.br/painel01.php');
+    u.searchParams.set('mu_ibge',String(m.ibge));
+    u.searchParams.set('p_ibge',String(m.ibge).slice(0,2));
+    const html=await fetchBrowserText(u.toString(),15000);
+    const text=stripHtml(html);
 
-    const uCad=new URL(base.toString());
-    uCad.searchParams.set('p_escopo','2');
-    const cadHtml=await fetchBrowserText(uCad.toString(),15000);
-    const cadText=stripHtml(cadHtml);
-    const blocks=cecadBlocks(cadHtml);
-    const out={source:'MDS · CECAD 2.0',reference:cecadReference(blocks)};
-
-    const after=(rx,span=260)=>{
-      const mm=cadText.match(rx); if(!mm)return null;
-      const tail=cadText.slice((mm.index||0)+mm[0].length,(mm.index||0)+mm[0].length+span);
+    const after=(rx,span=320)=>{
+      const mm=text.match(rx); if(!mm)return null;
+      let tail=text.slice((mm.index||0)+mm[0].length,(mm.index||0)+mm[0].length+span);
+      tail=tail.replace(/(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/g,' ');
       const nv=tail.match(/(\d{1,3}(?:\.\d{3})+|\d+)(?![\d])/);
       return nv?safe(visNum(nv[1])):null;
     };
+    const ref=(()=>{
+      const mm=text.match(/Fam[ií]lias\s+Cadastradas[\s\S]{0,100}?(0?[1-9]|1[0-2])\s*\/\s*(20\d{2})/i);
+      return mm?String(mm[1]).padStart(2,'0')+'/'+mm[2]:'';
+    })();
 
-    out.families=after(/Fam[ií]lias\s+Cadastradas/i) ?? safe(cecadMetric(blocks,/familias cadastradas(?!.*pobreza|.*baixa renda)/));
-    out.povertyFamilies=after(/Fam[ií]lias\s+em\s+situa[cç][aã]o\s+de\s+Pobreza/i) ?? safe(cecadMetric(blocks,/situacao de pobreza/));
-    out.lowIncomeFamilies=after(/Fam[ií]lias\s+de\s+Baixa\s+Renda/i) ?? safe(cecadMetric(blocks,/baixa renda/));
-    out.aboveHalfFamilies=after(/Fam[ií]lias\s+Acima\s+de\s+[½1\/2]+\s*Sal\.?\s*Min/i) ?? safe(cecadMetric(blocks,/acima de (?:1\/2|meio).*salario/));
-    out.updatedFamilies=after(/Total\s+de\s+Fam[ií]lias\s+Atualizadas/i);
+    const out={source:'MDS · CECAD 2.0',reference:ref};
+    out.families=after(/Fam[ií]lias\s+Cadastradas/i);
+    out.povertyFamilies=after(/FAM[IÍ]LIAS[\s\S]{0,40}?em\s+situa[cç][aã]o\s+de\s+Pobreza/i);
+    out.lowIncomeFamilies=after(/FAM[IÍ]LIAS[\s\S]{0,40}?em\s+situa[cç][aã]o\s+de\s+Baixa\s+Renda/i);
+    out.aboveHalfFamilies=after(/FAM[IÍ]LIAS[\s\S]{0,80}?Acima\s+de\s+[½1\/2]+\s*Sal\.?\s*min/i);
+    out.updatedFamilies=after(/Total\s+de\s+Fam[ií]lias\s+Atualizadas[\s\S]{0,80}?de\s+todo\s+o\s+cadastro/i);
 
-    if(finite(out.povertyFamilies)&&finite(out.lowIncomeFamilies))
-      out.upToHalfMinimumWageFamilies=safe(Number(out.povertyFamilies)+Number(out.lowIncomeFamilies));
-
-    try{
-      const uPbf=new URL(base.toString());
-      uPbf.searchParams.set('p_escopo','3');
-      const pbfText=stripHtml(await fetchBrowserText(uPbf.toString(),15000));
-      const mm=pbfText.match(/Fam[ií]lias\s+Benefici[aá]rias/i);
-      if(mm){
-        const tail=pbfText.slice((mm.index||0)+mm[0].length,(mm.index||0)+mm[0].length+220);
-        const nv=tail.match(/(\d{1,3}(?:\.\d{3})+|\d+)(?![\d])/);
-        if(nv)out.bolsaFamiliaFamilies=safe(visNum(nv[1]));
-        const rr=tail.match(/(0?[1-9]|1[0-2])\/(20\d{2})/);
-        if(rr)out.bolsaFamiliaReference=String(rr[1]).padStart(2,'0')+'/'+rr[2];
+    const parts=[out.povertyFamilies,out.lowIncomeFamilies,out.aboveHalfFamilies];
+    if(parts.every(finite)){
+      const reconciled=parts.reduce((s,v)=>s+Number(v),0);
+      if(!finite(out.families)||Number(out.families)<reconciled*0.95||Number(out.families)>reconciled*1.05){
+        out.families=safe(reconciled);
+        out.familiesReconciled=true;
       }
-    }catch{}
+      out.upToHalfMinimumWageFamilies=safe(Number(out.povertyFamilies)+Number(out.lowIncomeFamilies));
+    }
+    if(finite(out.updatedFamilies)&&finite(out.families)&&Number(out.updatedFamilies)>Number(out.families)){
+      out.updatedFamilies=null;
+    }
 
-    return [out.families,out.povertyFamilies,out.lowIncomeFamilies,out.aboveHalfFamilies,out.updatedFamilies,out.bolsaFamiliaFamilies].some(finite)?out:null;
+    return [out.families,out.povertyFamilies,out.lowIncomeFamilies,out.aboveHalfFamilies,out.updatedFamilies].some(finite)?out:null;
   }catch{return null}
 }
 async function cecadPbf(m){
@@ -429,9 +426,15 @@ async function liveCadunico(m){
     if(finite(obs.updatedFamilies))out.updatedFamilies=safe(obs.updatedFamilies);
   }
 
-  if(pbf&&!finite(out.bolsaFamiliaFamilies)){
+  if(pbf&&finite(pbf.families)){
     out.bolsaFamiliaFamilies=safe(pbf.families);
     out.bolsaFamiliaReference=pbf.reference;
+    out.bolsaFamiliaSource='MDS · CECAD 2.0 · Série histórica';
+  }
+
+  if(finite(out.bolsaFamiliaFamilies)&&finite(out.families)&&Number(out.bolsaFamiliaFamilies)>Number(out.families)*1.05){
+    out.notes.push('Bolsa Família descartado por inconsistência com o total de famílias do Cadastro Único.');
+    out.bolsaFamiliaFamilies=null;
   }
 
   if(benefits){
@@ -580,13 +583,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.12.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.13.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.12.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.13.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
