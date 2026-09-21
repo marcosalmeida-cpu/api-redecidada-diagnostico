@@ -329,16 +329,16 @@ async function liveDisability(m){
   }catch{return null}
 }
 async function liveCadunico(m){
-  const snap=await snapshot('cadunico',m.ibge);
-  if(snap)return snap;
-  const [cecad,pbf,bpcMetrics,pcdCensus,obs]=await Promise.all([
+  const [snap,benefits,cecad,pbf,bpcMetrics,pcdCensus,obs]=await Promise.all([
+    snapshot('cadunico',m.ibge),
+    snapshot('beneficios_sociais',m.ibge),
     cecadSummary(m),
     cecadPbf(m),
     visMunicipalMetrics(VIS_BPC_CADUNICO,m,12000),
     liveDisability(m),
     observatorioSnapshot(m)
   ]);
-  const out={source:'MDS · CECAD 2.0 + IBGE Censo 2022',notes:[]};
+  const out={...(snap||{}),source:'MDS · CECAD 2.0 + dados abertos CGU + IBGE Censo 2022',notes:Array.isArray(snap?.notes)?[...snap.notes]:[]};
 
   if(cecad){
     Object.assign(out,cecad);
@@ -364,6 +364,21 @@ async function liveCadunico(m){
     out.bolsaFamiliaReference=pbf.reference;
   }
 
+  if(benefits){
+    if(!finite(out.bpcTotal)&&finite(benefits.bpcTotal)){
+      out.bpcTotal=safe(benefits.bpcTotal);
+      out.bpcReference=benefits.bpcReference||out.bpcReference||'';
+      out.bpcBasis=benefits.bpcBasis||'benefícios BPC pagos no município do beneficiário';
+      out.bpcSource=benefits.bpcSource||'CGU · Portal da Transparência';
+    }
+    if(!finite(out.bolsaFamiliaFamilies)&&finite(benefits.bolsaFamiliaPaidRecipients)){
+      out.bolsaFamiliaPaidRecipients=safe(benefits.bolsaFamiliaPaidRecipients);
+      out.bolsaFamiliaPaidRecipientsReference=benefits.bolsaFamiliaPaidRecipientsReference||'';
+      out.bolsaFamiliaPaidRecipientsSource=benefits.bolsaFamiliaPaidRecipientsSource||'CGU · Portal da Transparência';
+      out.notes.push('Bolsa Família exibido como responsáveis/beneficiários pagos quando a contagem oficial de famílias do CECAD não estiver disponível.');
+    }
+  }
+
   if(Array.isArray(bpcMetrics)&&bpcMetrics.length){
     out.bpcTotal=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico(?!.*pcd|.*idoso)/));
     out.bpcPcd=safe(visMetric(bpcMetrics,/beneficiarios bpc no cadastro unico.*pcd/));
@@ -382,13 +397,13 @@ async function liveCadunico(m){
   out.extremePovertyFamilies=null;
   out.notes.push('Extrema pobreza permanece n/d quando a base agregada atual não publica o recorte separadamente.');
   out.mapaSocialUrl='https://mapa-social.mds.gov.br/';
-  const useful=[out.families,out.povertyFamilies,out.lowIncomeFamilies,out.bolsaFamiliaFamilies,out.pcdPeople,out.bpcTotal].some(finite);
+  const useful=[out.families,out.povertyFamilies,out.lowIncomeFamilies,out.bolsaFamiliaFamilies,out.bolsaFamiliaPaidRecipients,out.pcdPeople,out.bpcTotal].some(finite);
   return useful?out:null;
 }
 async function liveVulnerability(m){
   const cad=await liveCadunico(m);
   if(cad){
-    const complete=[cad.families,cad.bolsaFamiliaFamilies,cad.pcdPeople,cad.bpcTotal,cad.povertyFamilies,cad.lowIncomeFamilies].filter(finite).length;
+    const complete=[cad.families,cad.bolsaFamiliaFamilies??cad.bolsaFamiliaPaidRecipients,cad.pcdPeople,cad.bpcTotal,cad.povertyFamilies,cad.lowIncomeFamilies].filter(finite).length;
     return result('vulnerabilidade',complete>=5?'ok':'partial',{cadunico:cad},'MDS · Cadastro Único / Bolsa Família / BPC','Indicadores sociais consultados automaticamente em fontes agregadas do MDS.',cad.reference||cad.bolsaFamiliaReference||cad.bpcReference||'');
   }
   return result('vulnerabilidade','bad',{cadunico:null},'MDS · Cadastro Único / Bolsa Família / BPC','As consultas agregadas do MDS não responderam nesta tentativa.','');
@@ -485,13 +500,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.9.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.10.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.9.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.10.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
