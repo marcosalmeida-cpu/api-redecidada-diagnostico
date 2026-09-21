@@ -64,6 +64,14 @@ async function snapshot(name,ibge){
     return all?.[String(ibge)]??null;
   }catch{return null}
 }
+async function observatorioSnapshot(m){
+  try{
+    if(!m.uf)return null;
+    const raw=await readFile(path.join(SNAP,'observatorio',String(m.uf).toUpperCase()+'.json'),'utf8');
+    const all=JSON.parse(raw);
+    return all?.[String(m.ibge)]??null;
+  }catch{return null}
+}
 function result(name,status,data,source,message='',reference=''){
   return {name,status,data:data??null,source,reference,message,updatedAt:new Date().toISOString()};
 }
@@ -323,11 +331,12 @@ async function liveDisability(m){
 async function liveCadunico(m){
   const snap=await snapshot('cadunico',m.ibge);
   if(snap)return snap;
-  const [cecad,pbf,bpcMetrics,pcdCensus]=await Promise.all([
+  const [cecad,pbf,bpcMetrics,pcdCensus,obs]=await Promise.all([
     cecadSummary(m),
     cecadPbf(m),
     visMunicipalMetrics(VIS_BPC_CADUNICO,m,12000),
-    liveDisability(m)
+    liveDisability(m),
+    observatorioSnapshot(m)
   ]);
   const out={source:'MDS · CECAD 2.0 + IBGE Censo 2022',notes:[]};
 
@@ -335,6 +344,19 @@ async function liveCadunico(m){
     Object.assign(out,cecad);
     if(finite(out.families)&&finite(out.povertyFamilies)&&finite(out.lowIncomeFamilies)&&!finite(out.upToHalfMinimumWageFamilies))
       out.upToHalfMinimumWageFamilies=safe(Number(out.povertyFamilies)+Number(out.lowIncomeFamilies));
+  }
+
+  if(obs){
+    out.observatorioAvailable=true;
+    out.observatorioReference=obs.reference||'painel público';
+    for(const k of ['families','bolsaFamiliaFamilies','bpcTotal','povertyFamilies']){
+      if(!finite(out[k])&&finite(obs[k]))out[k]=safe(obs[k]);
+    }
+    if(finite(obs.pcdFamilies))out.pcdCadunicoFamilies=safe(obs.pcdFamilies);
+    if(finite(obs.singlePersonFamilies))out.singlePersonFamilies=safe(obs.singlePersonFamilies);
+    if(finite(obs.streetFamilies))out.streetFamilies=safe(obs.streetFamilies);
+    if(finite(obs.gpteFamilies))out.gpteFamilies=safe(obs.gpteFamilies);
+    if(finite(obs.updatedFamilies))out.updatedFamilies=safe(obs.updatedFamilies);
   }
 
   if(pbf){
@@ -463,13 +485,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.8.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.9.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.8.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.9.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
