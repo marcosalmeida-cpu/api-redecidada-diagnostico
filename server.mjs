@@ -21,6 +21,10 @@ const INSS_CKAN='https://dadosabertos.inss.gov.br';
 const INSS_ACTIVE_2026_07='fbe3f2f9-aea0-48f2-b802-cd4cadb1f338';
 const SIOP_OPEN='https://www1.siop.planejamento.gov.br/sparql/';
 const PBFCAD='https://aplicacoes.cidadania.gov.br/ri/pbfcad/index.html';
+const OPENALEX='https://api.openalex.org/works';
+const CROSSREF='https://api.crossref.org/works';
+const TRANSPARENCIA='https://api.portaldatransparencia.gov.br/api-de-dados';
+
 
 
 const VIS_FAMILIAS_RENDA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWChLNe09Gv17llja2AYWx7YmqqdH9%2BaWGEkWuXbWTZ6ayanbWUndqdiLSYmcrGbtCen9DgiG%2BiqaGt3nSIwayaes%2BS0J6gvKuEZJurlp60n666qpKSx5TWsJiYtrOVqLuadbSswrtam7bHlNecY5SrrGVweJSd2p2ItJiZysZu0J6f0OCIb6Kpoa3edIjBrJp6z5LQnqC8rIFkm6uWnrSfrrqqkpLHlNawmJi2s5Wou5p1tKzCu1qfvdGWyW5njdp%2Fa26Dm5vlrLKJnY7D1JileJm%2B58CZd4Oor%2BZcu62djsTAZptuksDcsW%2BiqaGt3nSzr6OgvJxu0J6f0OCIb6%2B9ol30WrC9mJm81JbPZXPL2rOVqaeYm91lfXdXWnfEosupmNDeslx8tpSg2qasgWhetsSUzmljhpzKb6Kpoa3edLOvo6C8nG7Qnp%2FQ4Ihvr72itsqurryrlrvCl89dp8zvrqBcrJpa35q6EeSZwMKmiqah0N6%2FnbCpqFrnqG2RmJG41KfcrFMgFbudn7dYi%2B6au8KgkbjFmIqhmH3hrqH%2F9aGj2qxts6RNysqn3572BD7wo1ysmlrescHAnJq4gaPZn6XC9a5Upbaoneuiwa%2BqTcXQU62el77uwaaraPjU56KwvVp%2BzMKh3qaXvt%2ByVKCtVaDaphD7o5a41FPPqlPQ5MGpnQvc%2FRyobbKcTcfQldyirb6btqKvq6ej7ZrAbqWcd6SUzp6m0e28VP%2Fio6PcqHCfrI7F1ZzOnpfCm7GZXK6WpzzmubeYoHfGoIqwnNHwrvfjC9ipmZ2ybqecudOY5J5ffe6ym7G2mamZmm20mJbPwlPOrFOt7bybrqmim5l7vLqqjnenlNcA4Mnkrl5oaJ6o7Jy%2Ft6uOyoGh2V12vt%2Bup7C6pFo807u3mpx6sqjLq6fG366YoWiZn5mfrrv62sPKlN1dl8Kbr5WlwJZa6567sphXgYGc2LCWz%2BTBla9oo6mZfK6ymKDL06KKAM3L5LCjX5mqm%2BettrKYkbyBl89dmb7oEOGosZatmZy8u1efvM%2BXy12jwu1tl524nq7aWbqzpaC4zVPLsfYGm7qZpbdVrdqlEO%2BplsaOoC3qocbovFRkmKSc657Hr1dYd6OU07WUfe2yoqCpXlrip8CxqZbLwqaKq6J9vq6YnbuprOhZEOillrrQVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd68oVy6mqjdmm2%2BnJ93xJTapqe%2Bm7qZqruWppmasLekjnfFmIqqmMbqbaedtPjb66K8e6TwBM%2Bc16xdh6Vtnaq7mKzira7BV5vGgXbLoZTQ77%2BjXAvPqOKcvMqnaNPdr5xtZZCofWdpeGaOqWmHfmdnh5GNpQ%3D%3D';
@@ -503,7 +507,7 @@ async function liveVulnerability(m){
 }
 function dca(items,code){
   const liq=items.filter(x=>clean(x.coluna).includes('despesas liquidadas'));
-  const r=liq.find(x=>String(x.cod_interno??'').trim()===code)||liq.find(x=>clean(x.conta).startsWith(clean(code)+' -'));
+  const r=liq.find(x=>String(x.cod_conta??x.cod_interno??'').trim()===code)||liq.find(x=>clean(x.conta).startsWith(clean(code)+' -'));
   return r?num(r.valor):NaN;
 }
 async function budget(m){
@@ -516,11 +520,11 @@ async function budget(m){
       const d=await fetchJson(u.toString(),12000);
       if(!Array.isArray(d?.items)||!d.items.length)continue;
       const items=d.items,liq=items.filter(x=>clean(x.coluna).includes('despesas liquidadas'));
-      const funcs=liq.filter(x=>/^\d{2}$/.test(String(x.cod_interno??'')));
+      const funcs=liq.filter(x=>/^\d{2}$/.test(String(x.cod_conta??x.cod_interno??'')));
       const total=funcs.reduce((s,x)=>s+(finite(num(x.valor))?num(x.valor):0),0);
       return result('orcamento','ok',{
         year:y,total:safe(total),assist:safe(dca(items,'08')),health:safe(dca(items,'10')),education:safe(dca(items,'12')),
-        work:safe(dca(items,'11')),urbanism:safe(dca(items,'15')),housing:safe(dca(items,'16')),sanitation:safe(dca(items,'17'))
+        work:safe(dca(items,'11')),urbanism:safe(dca(items,'15')),housing:safe(dca(items,'16')),sanitation:safe(dca(items,'17')),environment:safe(dca(items,'18')),culture:safe(dca(items,'13')),socialSecurity:safe(dca(items,'09'))
       },'SICONFI / Tesouro Nacional','Despesas liquidadas por função.','DCA '+y);
     }catch{}
   }
@@ -768,6 +772,126 @@ async function liveBolsaFamiliaModuleV216(m){
   return result('bolsa-familia',useful?'ok':'partial',data,'MDS · PBF e Cadastro Único no seu município / CECAD / dados abertos',pb.reachable?'Bolsa Família mantido em módulo próprio, separado do Cadastro Único.':'O portal municipal foi referenciado, mas não respondeu à checagem server-side; CECAD/dados abertos permanecem como contingência.',data.reference);
 }
 
+
+/* v2.17 · evidências acadêmicas, Bolsa Família e diagnóstico de cobertura */
+const UF_NAMES_V217={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
+function yearFromPartsV217(x){
+  const p=x?.['date-parts']||x;
+  const y=Array.isArray(p)&&Array.isArray(p[0])?Number(p[0][0]):Array.isArray(p)?Number(p[0]):NaN;
+  return finite(y)?Number(y):null;
+}
+function titleV217(v){return Array.isArray(v)?String(v[0]||''):String(v||'')}
+function academicQueryV217(m){
+  const state=UF_NAMES_V217[String(m.uf||'').toUpperCase()]||m.uf||'';
+  return '"' + String(m.nome||'').replace(/"/g,'') + '" AND "' + String(state).replace(/"/g,'') + '" AND Brazil';
+}
+async function openAlexEvidenceV217(m){
+  try{
+    const u=new URL(OPENALEX);
+    u.searchParams.set('search',academicQueryV217(m));
+    u.searchParams.set('per_page','8');
+    u.searchParams.set('select','id,doi,display_name,publication_year,cited_by_count,primary_location,best_oa_location,authorships,type');
+    const d=await fetchJson(u.toString(),18000);
+    return (d?.results||[]).map(x=>({
+      provider:'OpenAlex',
+      title:String(x.display_name||'').trim(),
+      year:finite(x.publication_year)?Number(x.publication_year):null,
+      doi:x.doi||'',
+      url:x.best_oa_location?.landing_page_url||x.primary_location?.landing_page_url||x.doi||x.id||'',
+      source:x.primary_location?.source?.display_name||x.best_oa_location?.source?.display_name||'',
+      authors:(x.authorships||[]).slice(0,4).map(a=>a?.author?.display_name).filter(Boolean),
+      citations:safe(x.cited_by_count),
+      type:x.type||''
+    })).filter(x=>x.title);
+  }catch{return []}
+}
+async function crossrefEvidenceV217(m){
+  try{
+    const state=UF_NAMES_V217[String(m.uf||'').toUpperCase()]||m.uf||'';
+    const u=new URL(CROSSREF);
+    u.searchParams.set('query.bibliographic',m.nome+' '+state+' Brasil');
+    u.searchParams.set('rows','8');
+    u.searchParams.set('select','DOI,title,published,published-online,published-print,author,container-title,URL,score,type');
+    u.searchParams.set('mailto','parceriaseprojetos@redecidada.org.br');
+    const d=await fetchJson(u.toString(),18000);
+    return (d?.message?.items||[]).map(x=>({
+      provider:'Crossref',
+      title:titleV217(x.title).trim(),
+      year:yearFromPartsV217(x.published||x['published-online']||x['published-print']),
+      doi:x.DOI||'',
+      url:x.URL|| (x.DOI?'https://doi.org/'+x.DOI:''),
+      source:titleV217(x['container-title']),
+      authors:(x.author||[]).slice(0,4).map(a=>[a.given,a.family].filter(Boolean).join(' ')).filter(Boolean),
+      score:safe(x.score),
+      type:x.type||''
+    })).filter(x=>x.title);
+  }catch{return []}
+}
+function evidenceRelevantV217(x,m){
+  const hay=clean([x.title,x.source,(x.authors||[]).join(' ')].join(' '));
+  const city=clean(m.nome),state=clean(UF_NAMES_V217[String(m.uf||'').toUpperCase()]||m.uf);
+  return hay.includes(city)||hay.includes(city.replace(/\s+/g,' '))||hay.includes(state);
+}
+async function liveEvidenceV217(m){
+  const [snap,oa,cr]=await Promise.all([snapshot('evidencias',m.ibge),openAlexEvidenceV217(m),crossrefEvidenceV217(m)]);
+  const merged=[...(snap?.items||[]),...oa,...cr],seen=new Set(),items=[];
+  for(const x of merged){
+    const key=clean(x.doi||x.title);
+    if(!key||seen.has(key))continue;
+    seen.add(key);
+    if(!snapshot && !evidenceRelevantV217(x,m))continue;
+    items.push(x);
+    if(items.length>=8)break;
+  }
+  return result('evidencias',items.length?'ok':'partial',{
+    query:academicQueryV217(m),
+    items,
+    providers:['OpenAlex','Crossref'],
+    note:'Evidência acadêmica complementar. Não substitui indicador oficial municipal e não preenche número estatístico sem base estruturada.'
+  },'OpenAlex + Crossref','Pesquisas e publicações relacionadas ao território são exibidas com título, ano e origem; resultados acadêmicos não são convertidos automaticamente em estatística oficial.',items.length?String(items.length)+' registros':'');
+}
+function anyFiniteDeepV217(x){
+  if(finite(x))return true;
+  if(Array.isArray(x))return x.some(anyFiniteDeepV217);
+  if(x&&typeof x==='object')return Object.values(x).some(anyFiniteDeepV217);
+  return false;
+}
+async function transparencyBolsaV217(m){
+  const token=process.env.TRANSPARENCIA_TOKEN||process.env.CHAVE_API_DADOS||'';
+  if(!token)return null;
+  const now=new Date(),periods=[];
+  for(let k=2;k<=8;k++){
+    const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()-k,1));
+    periods.push(String(d.getUTCFullYear())+String(d.getUTCMonth()+1).padStart(2,'0'));
+  }
+  for(const mesAno of periods){
+    for(const endpoint of ['novo-bolsa-familia-por-municipio','bolsa-familia-por-municipio']){
+      try{
+        const u=new URL(TRANSPARENCIA+'/'+endpoint);
+        u.searchParams.set('mesAno',mesAno);
+        u.searchParams.set('codigoIbge',String(m.ibge));
+        u.searchParams.set('pagina','1');
+        const r=await request(u.toString(),18000,{'chave-api-dados':token,'accept':'application/json'});
+        const d=await r.json();
+        const arr=Array.isArray(d)?d:(Array.isArray(d?.data)?d.data:[]);
+        if(!arr.length)continue;
+        const pick=(o,rx)=>{const k=Object.keys(o||{}).find(k=>rx.test(clean(k)));return k?num(o[k]):NaN};
+        let families=NaN,totalValue=0,people=NaN;
+        for(const row of arr){
+          const f=pick(row,/quantidade.*benefici|familias.*benefici|qtd.*benefici|beneficiarios/);
+          const v=pick(row,/valor.*(parcela|beneficio|pago|total)|^valor$/);
+          const p=pick(row,/pessoas.*benefici|quantidade.*pessoas/);
+          if(finite(f))families=finite(families)?Math.max(families,Number(f)):Number(f);
+          if(finite(v))totalValue+=Number(v);
+          if(finite(p))people=finite(people)?Math.max(people,Number(p)):Number(p);
+        }
+        return {families:safe(families),paidRecipients:safe(people),totalValue:safe(totalValue||NaN),reference:mesAno.slice(4,6)+'/'+mesAno.slice(0,4),source:'CGU · Portal da Transparência',tokenConfigured:true};
+      }catch{}
+    }
+  }
+  return {tokenConfigured:true};
+}
+
 const loaders={
   perfil:liveProfile,
   vulnerabilidade:liveVulnerability,
@@ -788,7 +912,8 @@ const loaders={
   capacidade:m=>snapshotModule('capacidade',m,'IBGE MUNIC + Censo SUAS snapshot','Capacidade institucional'),
   orcamento:budget,
   recursos:resources,
-  ecossistema:m=>snapshotModule('ecossistema',m,'CNEAS snapshot','Ecossistema social')
+  ecossistema:m=>snapshotModule('ecossistema',m,'CNEAS snapshot','Ecossistema social'),
+  evidencias:liveEvidenceV217
 };
 async function load(name,m,refresh=false){
   const fn=loaders[name];
@@ -815,13 +940,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.16.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.17.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.16.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.17.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
@@ -829,9 +954,9 @@ const server=http.createServer(async(req,res)=>{
       return send(res,200,{ok:r.status!=='bad',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},...r});
     }
     
-    mth=u.pathname.match(/^\/api\/(poprua|cniups|educacao|clima|idosos|previdencia|siop|cadunico|bolsa-familia)\/(\d{7})$/);
+    mth=u.pathname.match(/^\/api\/(poprua|cniups|educacao|clima|idosos|previdencia|siop|cadunico|bolsa-familia|evidencias|orcamento)\/(\d{7})$/);
     if(mth){
-      const aliases={poprua:'poprua',cniups:'socioeducativo',educacao:'educacao',clima:'clima',idosos:'idosos',previdencia:'previdencia',siop:'siop',cadunico:'cadunico','bolsa-familia':'bolsa-familia'};
+      const aliases={poprua:'poprua',cniups:'socioeducativo',educacao:'educacao',clima:'clima',idosos:'idosos',previdencia:'previdencia',siop:'siop',cadunico:'cadunico','bolsa-familia':'bolsa-familia',evidencias:'evidencias',orcamento:'orcamento'};
       const m=await municipality(mth[2],u.searchParams.get('municipio')||u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
       const r=await load(aliases[mth[1]],m,u.searchParams.get('refresh')==='1');
       return send(res,200,{ok:r.status!=='bad',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},...r});
