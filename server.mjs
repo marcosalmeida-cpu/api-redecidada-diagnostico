@@ -12,6 +12,15 @@ const IBGE='https://servicodados.ibge.gov.br/api/v1/localidades/municipios/';
 const IBGE_AGG='https://servicodados.ibge.gov.br/api/v3/agregados';
 const SICONFI='https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca';
 const TRANSFERE='https://api-publica.transferegov.gestao.gov.br/especiais/';
+const ADAPTA='https://sistema.adaptabrasil.mcti.gov.br';
+const OBPOPRUA_PAGE='https://obpoprua.direito.ufmg.br/moradia_pop_rua.html';
+const OBPOPRUA_CSV='https://datawrapper.dwcdn.net/pt0XC/2/dataset.csv';
+const CNIUPS_PANEL='https://paineisanalytics.cnj.jus.br/single/?appid=a12c1a54-541f-4fd7-bbdf-afba0ca89a98&sheet=ae02a5d7-7740-4635-95fb-78d091d6d067&theme=CNIUPS&lang=pt-BR&opt=ctxmenu,currsel';
+const SISAP='https://homologacao-sisapidoso.icict.fiocruz.br/';
+const INSS_CKAN='https://dadosabertos.inss.gov.br';
+const INSS_ACTIVE_2026_07='fbe3f2f9-aea0-48f2-b802-cd4cadb1f338';
+const SIOP_OPEN='https://www1.siop.planejamento.gov.br/sparql/';
+
 
 const VIS_FAMILIAS_RENDA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWChLNe09Gv17llja2AYWx7YmqqdH9%2BaWGEkWuXbWTZ6ayanbWUndqdiLSYmcrGbtCen9DgiG%2BiqaGt3nSIwayaes%2BS0J6gvKuEZJurlp60n666qpKSx5TWsJiYtrOVqLuadbSswrtam7bHlNecY5SrrGVweJSd2p2ItJiZysZu0J6f0OCIb6Kpoa3edIjBrJp6z5LQnqC8rIFkm6uWnrSfrrqqkpLHlNawmJi2s5Wou5p1tKzCu1qfvdGWyW5njdp%2Fa26Dm5vlrLKJnY7D1JileJm%2B58CZd4Oor%2BZcu62djsTAZptuksDcsW%2BiqaGt3nSzr6OgvJxu0J6f0OCIb6%2B9ol30WrC9mJm81JbPZXPL2rOVqaeYm91lfXdXWnfEosupmNDeslx8tpSg2qasgWhetsSUzmljhpzKb6Kpoa3edLOvo6C8nG7Qnp%2FQ4Ihvr72itsqurryrlrvCl89dp8zvrqBcrJpa35q6EeSZwMKmiqah0N6%2FnbCpqFrnqG2RmJG41KfcrFMgFbudn7dYi%2B6au8KgkbjFmIqhmH3hrqH%2F9aGj2qxts6RNysqn3572BD7wo1ysmlrescHAnJq4gaPZn6XC9a5Upbaoneuiwa%2BqTcXQU62el77uwaaraPjU56KwvVp%2BzMKh3qaXvt%2ByVKCtVaDaphD7o5a41FPPqlPQ5MGpnQvc%2FRyobbKcTcfQldyirb6btqKvq6ej7ZrAbqWcd6SUzp6m0e28VP%2Fio6PcqHCfrI7F1ZzOnpfCm7GZXK6WpzzmubeYoHfGoIqwnNHwrvfjC9ipmZ2ybqecudOY5J5ffe6ym7G2mamZmm20mJbPwlPOrFOt7bybrqmim5l7vLqqjnenlNcA4Mnkrl5oaJ6o7Jy%2Ft6uOyoGh2V12vt%2Bup7C6pFo807u3mpx6sqjLq6fG366YoWiZn5mfrrv62sPKlN1dl8Kbr5WlwJZa6567sphXgYGc2LCWz%2BTBla9oo6mZfK6ymKDL06KKAM3L5LCjX5mqm%2BettrKYkbyBl89dmb7oEOGosZatmZy8u1efvM%2BXy12jwu1tl524nq7aWbqzpaC4zVPLsfYGm7qZpbdVrdqlEO%2BplsaOoC3qocbovFRkmKSc657Hr1dYd6OU07WUfe2yoqCpXlrip8CxqZbLwqaKq6J9vq6YnbuprOhZEOillrrQVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd68oVy6mqjdmm2%2BnJ93xJTapqe%2Bm7qZqruWppmasLekjnfFmIqqmMbqbaedtPjb66K8e6TwBM%2Bc16xdh6Vtnaq7mKzira7BV5vGgXbLoZTQ77%2BjXAvPqOKcvMqnaNPdr5xtZZCofWdpeGaOqWmHfmdnh5GNpQ%3D%3D';
 const VIS_BOLSA_FAMILIA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bV%2Bgmxl05Kv2rmg2a19ZW51ZmymaX6JaV2JlmCbb2CNrMmlsKyamembs61ojMfGpt2slLysiJqdtKiftJ%2BuuqqSkpyZy6mmwraIp7G1WKvtnbKtp4%2B9wGTJrZjQ7ryVm3pwoNqlwLNyk7jNps94bsPcuaehg3Ct7qZwv6uRvMCjzKOSjtq9ma%2B7pJvYbIi0mJnKxm7Qnp%2FQ4Ihvoqmhrd50iMGsmnrSp86iks3ds5Ntp6Wf7Ky8r5ZhkseU1rCYmOGuoK%2BtcHXfmrnBnGiS1KjXYKTR37KTrKqbmaqYvbOqoMbCkp94mb7nwJl3rpam7J6IiZ2Ow9SYpXim0uhwpbCsmpnpm7OtaIzHxqbdrJS8sYianbSon7SfrrqqkpKcmcuppsK2iKextVir7Z2yraePvcBkya2Y0O68lZt%2FcKDapcCzcpO4zabPeG7D3LmnoYNwre6mcL%2BrkbzAo8yjko7avZmvu6Sb2Kaut6qMjpyZy6mmwrazlai7mnW0n666qpKSnKbfqq%2Bu8K6isLGZm92ebbKcTb3CoC3qn8bcwFSeraOf36Kwt%2FrOycqU3V2XzJudpquvp5vmmm2QppnKwlOwnqAgKLmdnWibqeumrrKYTcfQpYpuU8bpwZmjupao7Z5tfVeixcqjz7CmzNy2p1%2BZqpvnrbaymJG8gZfPXZm%2B6BDhqLGWrZmbsryck8DEnC3epcbcwFSgt1WK66i0wJiauIF12ammvpuTlakL4qbimm20pp%2FEwpfLXaPM7W1mXLGjrt6gv6%2BlobzUVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd2yoqGunp3i%2FO7AoI7KgZfZXYPP6rSmnbWWWruoucGYTZ3CoC3qn8bcbZqruqKb3Zptvqafd5RT06unwuK%2Flaq8mq2cisKvpaHAxZTOolPB4G2anbX45%2BWirsFXj7zPmNCmlsY%2B7qalqaha3ahtnqmcvtOU155Tn%2Bq5p51oe5vm%2FPq6oI53x6LcqpTB3G2kq7pVbpmiu8KclMnCod6ipoDMwpWqvJ6e2p2ybpuSd8eU1wDgyeSup1yqmqjen7axoPD405zLsFPB6m2ErrecrNqmrm55nMPUlIqDlMo%2B%2BqClqVWg6Ku6r5uOd9Gi3F1ofeS7qKGvp5vnrbLBWn7MwqHeppe%2B37JUoK1VoNqmEPujlrjUU8yiocLhtpelC9as4prAbpucd7Gl2aSlvuiuVH63oa3aWZOvpPAEzZzLXZnM7bqVoKlVquirbYRXlsXVmNGvlMvvsqdfmaqb5622spiRvIGXz12ZvugQ4aixlq2Zm7K8nJPAxJwt3qXG3MBUoLdViuuotMCYmriBddmppr6bk5WpC%2BKm4ppttKafxMKXy12jzO1ta1yxo67eoL%2BvpaG81Fa7spTL77aYnayaWt2ebbSYmhoOn9Oepn3dsqKhrp6d4vzuwKCOyoGX2V2Dz%2Bq0pp21llq7qLnBmE2dwqAt6p%2FG3G2aq7qim92abb6mn3eZU9myU8rctqdcsaOu3qC%2Fr6WhvNSv2niv2feI';
@@ -544,10 +553,196 @@ async function resources(m){
     return result('recursos','ok',{count:plans.length,indicated:safe(indicated),items},'Transferegov · Transferências Especiais','Valores indicados; execução local não é presumida.','API pública');
   }catch(e){return result('recursos','bad',null,'Transferegov',e?.message||'Consulta sem retorno.','')}
 }
+
+/* v2.15 · fontes territoriais adicionais */
+function csvRowsV215(text){
+  const out=[];let row=[],cell='',q=false;const s=String(text||'');
+  for(let i=0;i<s.length;i++){const c=s[i];
+    if(c==='"'){if(q&&s[i+1]==='"'){cell+='"';i++}else q=!q}
+    else if(c===','&&!q){row.push(cell);cell=''}
+    else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);cell='';if(row.some(x=>String(x).trim()))out.push(row);row=[]}
+    else cell+=c;
+  }
+  if(cell||row.length){row.push(cell);if(row.some(x=>String(x).trim()))out.push(row)}
+  return out;
+}
+function csvObjectsV215(text){
+  const rows=csvRowsV215(text);if(rows.length<2)return[];
+  const h=rows[0].map((x,i)=>String(x||'').trim()||('c'+i));
+  return rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??''])));
+}
+function objKeyV215(o,rx){return Object.keys(o||{}).find(k=>rx.test(clean(k)))||''}
+function matchCityV215(v,m){
+  const x=clean(v),n=clean(m.nome),uf=clean(m.uf);
+  return x===n||x===n+' '+uf||x===n+' - '+uf||x.startsWith(n+' ')||x.startsWith(n+' -');
+}
+async function livePopRuaV215(m){
+  const snap=(await snapshot('poprua',m.ibge))||(await snapshot('populacao_rua',m.ibge));
+  if(snap)return result('poprua','ok',{...snap,pageUrl:OBPOPRUA_PAGE},'Observatório Pop Rua/UFMG · snapshot municipal','Série municipal carregada.',snap.reference||snap.year||'');
+  try{
+    const rows=csvObjectsV215(await fetchText(OBPOPRUA_CSV,18000));if(!rows.length)throw Error('dataset vazio');
+    const p=rows[0],kc=objKeyV215(p,/municip|cidade|localidade/),ku=objKeyV215(p,/^uf$|estado/),ks=objKeyV215(p,/sexo|genero/);
+    let rr=kc?rows.filter(r=>matchCityV215(r[kc],m)):[];
+    if(ku&&rr.length){const x=rr.filter(r=>!r[ku]||clean(r[ku])===clean(m.uf));if(x.length)rr=x}
+    if(!rr.length)return result('poprua','partial',{total:null,series:[],pageUrl:OBPOPRUA_PAGE},'Observatório Pop Rua/UFMG','Município não localizado na série histórica.','');
+    const years=Object.keys(p).filter(k=>/^20\d{2}$/.test(String(k).trim())),series=[];
+    if(years.length){
+      let use=rr;if(ks){const t=rr.filter(r=>/total|ambos|todos/.test(clean(r[ks])));if(t.length)use=t}
+      for(const y of years){const vals=use.map(r=>num(r[y])).filter(finite);if(vals.length)series.push({year:Number(y),total:vals.reduce((a,b)=>a+Number(b),0)})}
+    }else{
+      const ky=objKeyV215(p,/^ano$|^year$|periodo/),kv=objKeyV215(p,/total|quantidade|pessoas|populacao/),g={};
+      for(const r of rr){
+        const ym=String(r[ky]||'').match(/20\d{2}/),y=ym?Number(ym[0]):0,v=num(r[kv]);
+        if(!y||!finite(v))continue;
+        (g[y]??=[]).push({v:Number(v),sex:ks?clean(r[ks]):''});
+      }
+      for(const [y,a] of Object.entries(g)){const t=a.filter(x=>/total|ambos|todos/.test(x.sex)),u=t.length?t:a;series.push({year:Number(y),total:u.reduce((z,x)=>z+x.v,0)})}
+    }
+    series.sort((a,b)=>a.year-b.year);const latest=series.length?series[series.length-1]:null;
+    return latest
+      ?result('poprua','ok',{total:latest.total,year:latest.year,series,pageUrl:OBPOPRUA_PAGE},'Observatório Brasileiro de Políticas Públicas com a População em Situação de Rua/UFMG','Série municipal histórica consultada no conjunto publicado pelo Observatório.',String(latest.year))
+      :result('poprua','partial',{total:null,series,pageUrl:OBPOPRUA_PAGE},'Observatório Pop Rua/UFMG','Fonte respondeu sem série numérica reconhecível.','');
+  }catch(e){return result('poprua','bad',{total:null,pageUrl:OBPOPRUA_PAGE},'Observatório Pop Rua/UFMG',e?.message||'Falha na consulta.','')}
+}
+async function liveSocioeducativoV215(m){
+  const snap=(await snapshot('cniups',m.ibge))||(await snapshot('socioeducativo',m.ibge));
+  if(snap)return result('socioeducativo','ok',{...snap,panelUrl:CNIUPS_PANEL},'CNJ · CNIUPS','Dados municipais do meio fechado carregados.',snap.reference||snap.period||'');
+  try{
+    await fetchBrowserText(CNIUPS_PANEL,15000);
+    return result('socioeducativo','partial',{adolescents:null,units:null,vacancies:null,occupancy:null,panelUrl:CNIUPS_PANEL,panelReachable:true},'CNJ · CNIUPS','Painel acessível, mas o Qlik carrega os valores dinamicamente; use snapshot/exportação estruturada para números municipais.','bimestral');
+  }catch(e){return result('socioeducativo','bad',{panelUrl:CNIUPS_PANEL,panelReachable:false},'CNJ · CNIUPS',e?.message||'Painel indisponível.','')}
+}
+async function liveEducationV215(m){
+  const base=await liveEducation(m);
+  const slug=clean(m.nome).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const url='https://cidades.ibge.gov.br/brasil/'+String(m.uf).toLowerCase()+'/'+slug+'/pesquisa/13/78117';
+  let reachable=false;try{await fetchBrowserText(url,12000);reachable=true}catch{}
+  return {...base,name:'educacao',data:{...(base.data||{}),ibgeCidadesUrl:url,ibgeCidadesReachable:reachable},source:(base.source?base.source+' + ':'')+'IBGE Cidades@ · Censo Escolar/Sinopse',message:reachable?'IBGE Cidades@ municipal também consultado; INEP/IBGE estruturado permanece como base principal.':base.message};
+}
+function walkObjectsV215(x,out=[]){
+  if(Array.isArray(x)){for(const v of x)walkObjectsV215(v,out)}
+  else if(x&&typeof x==='object'){out.push(x);for(const v of Object.values(x))if(v&&typeof v==='object')walkObjectsV215(v,out)}
+  return out;
+}
+function adaptaMatchV215(o,m){
+  const keys=Object.keys(o||{});
+  const code=keys.find(k=>/ibge|geocod|cod.*mun|municip.*cod|cd_geocmu/i.test(k));
+  const name=keys.find(k=>/^nome$|municip|cidade|localidade|name/i.test(k));
+  if(code){
+    const d=String(o[code]??'').replace(/\D/g,'');
+    if(d===String(m.ibge)||d===String(m.ibge).slice(0,6))return true;
+  }
+  if(name&&clean(o[name])===clean(m.nome))return true;
+  return false;
+}
+function adaptaValueV215(o){
+  if(!o||typeof o!=='object')return NaN;
+  const pref=Object.keys(o).filter(k=>/valor|value|indice|index|risco|score|media/i.test(k)&&!/id|ano|year|codigo|lat|lon/i.test(k));
+  for(const k of pref){const v=num(o[k]);if(finite(v))return Number(v)}
+  for(const [k,v0] of Object.entries(o)){if(/id|ano|year|codigo|lat|lon|area|popul/i.test(k))continue;const v=num(v0);if(finite(v))return Number(v)}
+  return NaN;
+}
+function adaptaPrimitiveV215(data,m){
+  if(!data||typeof data!=='object'||Array.isArray(data))return NaN;
+  for(const [k,v] of Object.entries(data)){
+    const d=String(k).replace(/\D/g,'');
+    if(d===String(m.ibge)||d===String(m.ibge).slice(0,6)){
+      if(finite(num(v)))return Number(num(v));
+      if(v&&typeof v==='object'){const n=adaptaValueV215(v);if(finite(n))return n}
+    }
+  }
+  return NaN;
+}
+async function adaptaIndicatorV215(m,id,year){
+  try{
+    const u=ADAPTA+'/api/mapa-dados/BR/municipio/'+id+'/'+year+'/null/adaptabrasil';
+    const data=await fetchJson(u,24000);
+    const direct=adaptaPrimitiveV215(data,m);if(finite(direct))return direct;
+    const objs=walkObjectsV215(data,[]),hit=objs.find(o=>adaptaMatchV215(o,m));
+    if(hit){const v=adaptaValueV215(hit);if(finite(v))return v}
+    return null;
+  }catch{return null}
+}
+async function liveClimateV215(m){
+  const snap=await snapshot('clima',m.ibge);
+  if(snap)return result('clima','ok',snap,'AdaptaBrasil MCTI · snapshot','Riscos climáticos municipais carregados.',snap.reference||'');
+  const vals=await Promise.all([
+    adaptaIndicatorV215(m,2,2020),adaptaIndicatorV215(m,2,2050),
+    adaptaIndicatorV215(m,60041,2015),adaptaIndicatorV215(m,60041,2050),
+    adaptaIndicatorV215(m,50103,2020),adaptaIndicatorV215(m,50103,2050),
+    adaptaIndicatorV215(m,50076,2020),adaptaIndicatorV215(m,50076,2050)
+  ]);
+  const [w0,w50,f0,f50,h0,h50,a0,a50]=vals;
+  const data={
+    waterStress:{current:safe(w0),future:safe(w50),year:2020,futureYear:2050},
+    floodRisk:{current:safe(f0),future:safe(f50),year:2015,futureYear:2050},
+    heatWaves:{current:safe(h0),future:safe(h50),year:2020,futureYear:2050},
+    arbovirusRisk:{current:safe(a0),future:safe(a50),year:2020,futureYear:2050},
+    panelUrl:'https://painelcidades.adaptabrasil.mcti.gov.br/',
+    apiBase:ADAPTA
+  };
+  const n=vals.filter(finite).length;
+  return result('clima',n>=4?'ok':n?'partial':'bad',data,'AdaptaBrasil MCTI · INPE/RNP','Índices municipais obtidos pelos microserviços JSON do AdaptaBrasil; projeções são mantidas separadas do presente.',n?'presente / 2050':'');
+}
+async function inssDatastoreV215(m){
+  try{
+    const metaUrl=new URL(INSS_CKAN+'/api/3/action/datastore_search');
+    metaUrl.searchParams.set('resource_id',INSS_ACTIVE_2026_07);metaUrl.searchParams.set('limit','1');
+    const meta=await fetchJson(metaUrl.toString(),15000);if(!meta?.success)throw Error('resource sem DataStore');
+    const fields=(meta.result?.fields||[]).map(x=>x.id);
+    const mun=fields.find(x=>/munic.*resid/i.test(clean(x)))||fields.find(x=>/municip/i.test(clean(x)));
+    const uf=fields.find(x=>/^uf$|unidade.*feder/i.test(clean(x)));
+    if(!mun)throw Error('campo municipal não identificado');
+    const candidates=[m.nome,String(m.nome).toUpperCase(),m.nome+' - '+m.uf,m.nome+'/'+m.uf];
+    for(const city of candidates){
+      const filters={[mun]:city};if(uf)filters[uf]=m.uf;
+      const u=new URL(INSS_CKAN+'/api/3/action/datastore_search');
+      u.searchParams.set('resource_id',INSS_ACTIVE_2026_07);u.searchParams.set('limit','0');u.searchParams.set('filters',JSON.stringify(filters));
+      const d=await fetchJson(u.toString(),18000),total=d?.result?.total;
+      if(finite(total)&&Number(total)>0)return{benefitsActive:Number(total),reference:'07/2026',resourceId:INSS_ACTIVE_2026_07};
+    }
+    return null;
+  }catch{return null}
+}
+async function livePrevidenciaV215(m){
+  const [snap,cnis,inss]=await Promise.all([snapshot('previdencia',m.ibge),snapshot('cnis',m.ibge),inssDatastoreV215(m)]);
+  const data={
+    ...(snap||{}),
+    benefitsActive:safe(inss?.benefitsActive??snap?.benefitsActive??snap?.benefitsTotal),
+    reference:inss?.reference||snap?.reference||'',
+    cnis:cnis||snap?.cnis||null,
+    inssDataset:'Benefícios Mantidos Ativos · INSS Dados Abertos',
+    inssResource:INSS_ACTIVE_2026_07
+  };
+  const useful=[data.benefitsActive,data.cnis?.contributors,data.cnis?.gpsRevenue].some(finite);
+  return result('previdencia',useful?'ok':'partial',data,'INSS Dados Abertos + Ministério da Previdência · CNIS agregado','Benefícios são consultados em base aberta por município. CNIS entra somente por estatísticas agregadas públicas ou snapshots oficiais; nenhum registro individual é exposto.',data.reference||'');
+}
+async function liveSeniorV215(m){
+  const sisap=await snapshot('sisap_idoso',m.ibge);
+  let reachable=false;try{await fetchBrowserText(SISAP+'index.php?pag=matriz',12000);reachable=true}catch{}
+  const data={sisap:sisap||{value:null,label:'SISAP-Idoso · indicador municipal',reference:'',available:reachable},sisapUrl:SISAP};
+  return result('idosos',sisap?'ok':reachable?'partial':'bad',data,'SISAP-Idoso · Fiocruz / Ministério da Saúde',sisap?'Indicadores municipais de saúde da pessoa idosa carregados.':'SISAP-Idoso disponível para consulta municipal; valores dependem da tabulação/extração estruturada ou snapshot.',sisap?.reference||'');
+}
+async function liveSiopV215(m){
+  const snap=await snapshot('siop',m.ibge);
+  if(snap)return result('siop','ok',snap,'SIOP · snapshot','Emendas individuais municipalizadas carregadas.',snap.reference||'');
+  const rec=await resources(m),d=rec?.data||{};
+  return result('siop','partial',{
+    total:safe(d.indicated),count:safe(d.count),items:d.items||[],reference:rec?.reference||'API pública',
+    siopOpenUrl:SIOP_OPEN,siopCredentialConfigured:Boolean(process.env.SIOP_TOKEN)
+  },'SIOP dados abertos / Transferegov · contingência pública','A API operacional de Emendas Individuais do SIOP exige credencial. Sem credencial, a leitura territorial usa dados abertos SIOP e, como contingência, transferências especiais do Transferegov; os conceitos não são somados.',rec?.reference||'');
+}
+
 const loaders={
   perfil:liveProfile,
   vulnerabilidade:liveVulnerability,
-  educacao:liveEducation,
+  educacao:liveEducationV215,
+  poprua:livePopRuaV215,
+  socioeducativo:liveSocioeducativoV215,
+  clima:liveClimateV215,
+  idosos:liveSeniorV215,
+  previdencia:livePrevidenciaV215,
+  siop:liveSiopV215,
   trabalho:m=>snapshotModule('trabalho',m,'MTE · RAIS/Novo Caged snapshot','Trabalho e renda'),
   aprendizagem:m=>snapshotModule('aprendizagem',m,'MTE/SIT · eSocial snapshot','Aprendizagem profissional'),
   protecao:m=>snapshotModule('suas',m,'MDS · Censo SUAS snapshot','Rede de proteção'),
@@ -583,17 +778,25 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.13.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.15.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.13.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.15.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
       const r=await load(mth[1],m,u.searchParams.get('refresh')==='1');
+      return send(res,200,{ok:r.status!=='bad',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},...r});
+    }
+    
+    mth=u.pathname.match(/^\/api\/(poprua|cniups|educacao|clima|idosos|previdencia|siop)\/(\d{7})$/);
+    if(mth){
+      const aliases={poprua:'poprua',cniups:'socioeducativo',educacao:'educacao',clima:'clima',idosos:'idosos',previdencia:'previdencia',siop:'siop'};
+      const m=await municipality(mth[2],u.searchParams.get('municipio')||u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
+      const r=await load(aliases[mth[1]],m,u.searchParams.get('refresh')==='1');
       return send(res,200,{ok:r.status!=='bad',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},...r});
     }
     mth=u.pathname.match(/^\/api\/diagnostico\/(\d{7})$/);
