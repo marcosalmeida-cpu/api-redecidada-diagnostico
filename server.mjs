@@ -20,6 +20,7 @@ const SISAP='https://homologacao-sisapidoso.icict.fiocruz.br/';
 const INSS_CKAN='https://dadosabertos.inss.gov.br';
 const INSS_ACTIVE_2026_07='fbe3f2f9-aea0-48f2-b802-cd4cadb1f338';
 const SIOP_OPEN='https://www1.siop.planejamento.gov.br/sparql/';
+const PBFCAD='https://aplicacoes.cidadania.gov.br/ri/pbfcad/index.html';
 
 
 const VIS_FAMILIAS_RENDA='https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q%5B%5D=oNOclsLerpibuKep3bWChLNe09Gv17llja2AYWx7YmqqdH9%2BaWGEkWuXbWTZ6ayanbWUndqdiLSYmcrGbtCen9DgiG%2BiqaGt3nSIwayaes%2BS0J6gvKuEZJurlp60n666qpKSx5TWsJiYtrOVqLuadbSswrtam7bHlNecY5SrrGVweJSd2p2ItJiZysZu0J6f0OCIb6Kpoa3edIjBrJp6z5LQnqC8rIFkm6uWnrSfrrqqkpLHlNawmJi2s5Wou5p1tKzCu1qfvdGWyW5njdp%2Fa26Dm5vlrLKJnY7D1JileJm%2B58CZd4Oor%2BZcu62djsTAZptuksDcsW%2BiqaGt3nSzr6OgvJxu0J6f0OCIb6%2B9ol30WrC9mJm81JbPZXPL2rOVqaeYm91lfXdXWnfEosupmNDeslx8tpSg2qasgWhetsSUzmljhpzKb6Kpoa3edLOvo6C8nG7Qnp%2FQ4Ihvr72itsqurryrlrvCl89dp8zvrqBcrJpa35q6EeSZwMKmiqah0N6%2FnbCpqFrnqG2RmJG41KfcrFMgFbudn7dYi%2B6au8KgkbjFmIqhmH3hrqH%2F9aGj2qxts6RNysqn3572BD7wo1ysmlrescHAnJq4gaPZn6XC9a5Upbaoneuiwa%2BqTcXQU62el77uwaaraPjU56KwvVp%2BzMKh3qaXvt%2ByVKCtVaDaphD7o5a41FPPqlPQ5MGpnQvc%2FRyobbKcTcfQldyirb6btqKvq6ej7ZrAbqWcd6SUzp6m0e28VP%2Fio6PcqHCfrI7F1ZzOnpfCm7GZXK6WpzzmubeYoHfGoIqwnNHwrvfjC9ipmZ2ybqecudOY5J5ffe6ym7G2mamZmm20mJbPwlPOrFOt7bybrqmim5l7vLqqjnenlNcA4Mnkrl5oaJ6o7Jy%2Ft6uOyoGh2V12vt%2Bup7C6pFo807u3mpx6sqjLq6fG366YoWiZn5mfrrv62sPKlN1dl8Kbr5WlwJZa6567sphXgYGc2LCWz%2BTBla9oo6mZfK6ymKDL06KKAM3L5LCjX5mqm%2BettrKYkbyBl89dmb7oEOGosZatmZy8u1efvM%2BXy12jwu1tl524nq7aWbqzpaC4zVPLsfYGm7qZpbdVrdqlEO%2BplsaOoC3qocbovFRkmKSc657Hr1dYd6OU07WUfe2yoqCpXlrip8CxqZbLwqaKq6J9vq6YnbuprOhZEOillrrQVruylMvvtpidrJpa3Z5ttJiaGg6f056mfd68oVy6mqjdmm2%2BnJ93xJTapqe%2Bm7qZqruWppmasLekjnfFmIqqmMbqbaedtPjb66K8e6TwBM%2Bc16xdh6Vtnaq7mKzira7BV5vGgXbLoZTQ77%2BjXAvPqOKcvMqnaNPdr5xtZZCofWdpeGaOqWmHfmdnh5GNpQ%3D%3D';
@@ -733,9 +734,45 @@ async function liveSiopV215(m){
   },'SIOP dados abertos / Transferegov · contingência pública','A API operacional de Emendas Individuais do SIOP exige credencial. Sem credencial, a leitura territorial usa dados abertos SIOP e, como contingência, transferências especiais do Transferegov; os conceitos não são somados.',rec?.reference||'');
 }
 
+
+/* v2.16 · Cadastro Único e Bolsa Família em módulos separados */
+async function pbfcadStatusV216(){
+  try{
+    const html=await fetchBrowserText(PBFCAD,12000);
+    return {reachable:/Bolsa Fam[ií]lia|Cadastro [ÚU]nico/i.test(stripHtml(html)),url:PBFCAD};
+  }catch{return {reachable:false,url:PBFCAD}}
+}
+async function liveCadunicoModuleV216(m){
+  const [cad,pb]=await Promise.all([liveCadunico(m),pbfcadStatusV216()]);
+  if(!cad)return result('cadunico','bad',{pbfcadUrl:PBFCAD,pbfcadReachable:pb.reachable},'MDS · Cadastro Único','As fontes agregadas do Cadastro Único não responderam nesta tentativa.','');
+  const data={...cad,pbfcadUrl:PBFCAD,pbfcadReachable:pb.reachable};
+  const useful=[data.families,data.povertyFamilies,data.lowIncomeFamilies,data.updatedFamilies,data.streetFamilies].some(finite);
+  return result('cadunico',useful?'ok':'partial',data,'MDS · CECAD 2.0 / RI Social / PBF e Cadastro Único no seu município',pb.reachable?'Consulta municipal complementada pelo portal PBF e Cadastro Único no seu município.':'CECAD/RI carregados; o portal PBF e Cadastro Único não respondeu à checagem server-side nesta tentativa.',data.reference||data.povertyReference||data.lowIncomeReference||'');
+}
+async function liveBolsaFamiliaModuleV216(m){
+  const [cad,benefits,pb]=await Promise.all([liveCadunico(m),snapshot('beneficios_sociais',m.ibge),pbfcadStatusV216()]);
+  const data={
+    families:safe(cad?.bolsaFamiliaFamilies),
+    paidRecipients:safe(cad?.bolsaFamiliaPaidRecipients??benefits?.bolsaFamiliaPaidRecipients),
+    totalValue:safe(benefits?.bolsaFamiliaTotalValue??benefits?.bolsaFamiliaPaidValue??benefits?.bolsaFamiliaAmount),
+    averageBenefit:safe(benefits?.bolsaFamiliaAverageBenefit),
+    igdM:safe(benefits?.igdM??benefits?.igdm),
+    reference:cad?.bolsaFamiliaReference||benefits?.bolsaFamiliaPaidRecipientsReference||benefits?.bolsaFamiliaReference||'',
+    cadunicoFamilies:safe(cad?.families),
+    source:cad?.bolsaFamiliaSource||benefits?.bolsaFamiliaPaidRecipientsSource||'MDS · CECAD 2.0',
+    pbfcadUrl:PBFCAD,
+    pbfcadReachable:pb.reachable
+  };
+  if(!finite(data.averageBenefit)&&finite(data.totalValue)&&finite(data.families)&&Number(data.families)>0)data.averageBenefit=safe(Number(data.totalValue)/Number(data.families));
+  const useful=[data.families,data.paidRecipients,data.totalValue].some(finite);
+  return result('bolsa-familia',useful?'ok':'partial',data,'MDS · PBF e Cadastro Único no seu município / CECAD / dados abertos',pb.reachable?'Bolsa Família mantido em módulo próprio, separado do Cadastro Único.':'O portal municipal foi referenciado, mas não respondeu à checagem server-side; CECAD/dados abertos permanecem como contingência.',data.reference);
+}
+
 const loaders={
   perfil:liveProfile,
   vulnerabilidade:liveVulnerability,
+  cadunico:liveCadunicoModuleV216,
+  'bolsa-familia':liveBolsaFamiliaModuleV216,
   educacao:liveEducationV215,
   poprua:livePopRuaV215,
   socioeducativo:liveSocioeducativoV215,
@@ -778,13 +815,13 @@ async function diagnosis(m,retry=false){
     return load(name,m,refresh);
   }));
   const modules=Object.fromEntries(arr.map(x=>[x.name,x]));
-  return {ok:true,version:'2.15.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
+  return {ok:true,version:'2.16.0',mode:'light-modular',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},generatedAt:new Date().toISOString(),modules,analysis:analysis(modules,m)};
 }
 const server=http.createServer(async(req,res)=>{
   try{
     if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
     const u=new URL(req.url,'http://'+(req.headers.host||'localhost'));
-    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.15.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
+    if(u.pathname==='/'||u.pathname==='/api/health')return send(res,200,{ok:true,service:'Diagnóstico Territorial Integrado · Rede Cidadã',version:'2.16.0',mode:'light-modular-auto',modules:Object.keys(loaders),time:new Date().toISOString()});
     let mth=u.pathname.match(/^\/api\/modulo\/([a-z-]+)\/(\d{7})$/);
     if(mth){
       const m=await municipality(mth[2],u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
@@ -792,9 +829,9 @@ const server=http.createServer(async(req,res)=>{
       return send(res,200,{ok:r.status!=='bad',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},...r});
     }
     
-    mth=u.pathname.match(/^\/api\/(poprua|cniups|educacao|clima|idosos|previdencia|siop)\/(\d{7})$/);
+    mth=u.pathname.match(/^\/api\/(poprua|cniups|educacao|clima|idosos|previdencia|siop|cadunico|bolsa-familia)\/(\d{7})$/);
     if(mth){
-      const aliases={poprua:'poprua',cniups:'socioeducativo',educacao:'educacao',clima:'clima',idosos:'idosos',previdencia:'previdencia',siop:'siop'};
+      const aliases={poprua:'poprua',cniups:'socioeducativo',educacao:'educacao',clima:'clima',idosos:'idosos',previdencia:'previdencia',siop:'siop',cadunico:'cadunico','bolsa-familia':'bolsa-familia'};
       const m=await municipality(mth[2],u.searchParams.get('municipio')||u.searchParams.get('nome')||'',u.searchParams.get('uf')||'');
       const r=await load(aliases[mth[1]],m,u.searchParams.get('refresh')==='1');
       return send(res,200,{ok:r.status!=='bad',municipio:{codigoIBGE:m.ibge,nome:m.nome,uf:m.uf},...r});
