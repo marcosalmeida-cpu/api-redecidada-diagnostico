@@ -1,0 +1,10 @@
+{
+  "name": "rede-cidada-diagnostico-territorial-v2",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Diagnóstico territorial com dados públicos verificados e relatórios PDF",
+  "type": "commonjs",
+  "scripts": { "start": "node server-local.js", "check": "node --check app.js && node --check api/diagnostico.js && node --check api/municipios.js && node --check api/analise.js && node --check api/relatorio.js" },
+  "engines": { "node": ">=22" },
+  "dependencies": { "pdf-lib": "1.17.1" }
+}
