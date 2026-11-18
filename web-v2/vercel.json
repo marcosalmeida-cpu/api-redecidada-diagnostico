@@ -1,0 +1,1 @@
+{"version":2,"functions":{"api/diagnostico.js":{"maxDuration":40},"api/municipios.js":{"maxDuration":30},"api/analise.js":{"maxDuration":45},"api/relatorio.js":{"maxDuration":45}}}
