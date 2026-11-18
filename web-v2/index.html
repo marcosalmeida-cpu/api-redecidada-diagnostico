@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#091d41">
+<meta name="description" content="Diagnóstico Territorial Integrado da Rede Cidadã. Dados públicos, fontes rastreáveis e análise social para decisões institucionais.">
+<title>Diagnóstico Territorial | Rede Cidadã</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+ <aside class="sidebar" aria-label="Navegação principal">
+  <div class="brand"><div class="brand-icon">RC</div><div><b>REDE CIDADÃ</b><small>INTELIGÊNCIA TERRITORIAL</small></div></div>
+  <div class="nav-label">PLATAFORMA</div>
+  <nav class="side-nav">
+   <a class="active" href="#visao"><span>◧</span> Visão territorial</a>
+   <a href="#indicadores"><span>◫</span> Indicadores públicos</a>
+   <a href="#analise"><span>✧</span> Leitura social</a>
+   <a href="#fontes"><span>▤</span> Fontes e auditoria</a>
+  </nav>
+  <div class="side-bottom"><div class="env-dot"></div><div><strong>Ambiente de homologação</strong><small>V2.0 · dados verificáveis</small></div></div>
+ </aside>
+ <div class="main">
+  <header class="topbar">
+    <div><div class="eyebrow">REDE CIDADÃ / GESTÃO ESTRATÉGICA</div><h1>Diagnóstico Territorial <span>Integrado</span></h1></div>
+    <div class="top-actions"><span class="chip chip-muted"><i></i> Homologação</span><button class="btn btn-dark" id="pdfTop" disabled type="button">↓ Exportar relatório PDF</button></div>
+  </header>
+  <main>
+   <section class="hero" id="visao">
+     <div class="hero-copy">
+       <span class="overline">OBSERVATÓRIO DE REALIDADE SOCIAL</span>
+       <h2>Conhecer o território.<br><em>Decidir com evidências.</em></h2>
+       <p>Dados públicos, leitura social crítica e rastreabilidade para orientar a atuação da Rede Cidadã. Indicadores sem validação permanecem indisponíveis.</p>
+       <div class="search-label">SELECIONE O TERRITÓRIO</div>
+       <div class="search-row">
+         <div class="search-box"><span class="search-icon">⌕</span><input id="citySearch" type="search" autocomplete="off" placeholder="Pesquisar município ou código IBGE" aria-label="Pesquisar município"><div class="suggestions" id="suggestions" hidden></div></div>
+         <button class="btn btn-lime" id="loadBtn" disabled>Gerar diagnóstico <span>↗</span></button>
+       </div>
+       <div class="sample-row"><span>Consultas rápidas:</span><button class="sample-city" data-ibge="3106200" data-city="Belo Horizonte" data-uf="MG">Belo Horizonte</button><button class="sample-city" data-ibge="3550308" data-city="São Paulo" data-uf="SP">São Paulo</button><button class="sample-city" data-ibge="2611606" data-city="Recife" data-uf="PE">Recife</button></div>
+     </div>
+     <div class="hero-visual" aria-hidden="true">
+       <div class="orbit a"></div><div class="orbit b"></div><div class="orbit c"></div>
+       <div class="pin"></div>
+       <div class="visual-card vc1"><span>01 / DEMOGRAFIA</span><b>Território</b><small>IBGE · base oficial</small></div>
+       <div class="visual-card vc2"><span>02 / FONTES</span><b>Rastreabilidade</b><small>Competência e procedência</small></div>
+       <div class="visual-card vc3"><span>03 / DECISÃO</span><b>Viabilidade social</b><small>Conclusões condicionadas</small></div>
+     </div>
+   </section>
+   <div class="notice" role="status" id="globalNotice"><span class="notice-icon">i</span><span>Esta versão está em homologação. O relatório diferencia indicadores validados, indisponíveis e ainda não integrados.</span></div>
+   <section class="section" id="indicadores">
+    <div class="section-heading"><div><span class="overline blue">01 / LEITURA DO TERRITÓRIO</span><h2>Panorama territorial</h2><p id="territoryCaption">Selecione um município para consultar os indicadores em fontes públicas.</p></div><div class="stamp" id="lastUpdated">AGUARDANDO CONSULTA</div></div>
+    <div class="kpi-grid">
+      <article class="kpi"><div class="kpi-top"><span>População censitária</span><span class="kpi-icon">◉</span></div><strong id="kpiCensus">—</strong><div class="kpi-meta" id="metaCensus">IBGE · Censo 2022</div></article>
+      <article class="kpi"><div class="kpi-top"><span>População estimada</span><span class="kpi-icon">▦</span></div><strong id="kpiEstimate">—</strong><div class="kpi-meta" id="metaEstimate">IBGE · estimativa oficial</div></article>
+      <article class="kpi"><div class="kpi-top"><span>Área territorial</span><span class="kpi-icon">⌗</span></div><strong id="kpiArea">—</strong><div class="kpi-meta">IBGE · km²</div></article>
+      <article class="kpi kpi-navy"><div class="kpi-top"><span>Assistência Social</span><span class="kpi-icon">◈</span></div><strong id="kpiAssist">—</strong><div class="kpi-meta" id="metaAssist">Despesa liquidada · SICONFI</div></article>
+    </div>
+    <div class="two-col">
+      <div class="panel"><div class="panel-head"><div><h3>Indicadores disponíveis</h3><p>Com competência e origem identificadas</p></div><span class="minor" id="indicatorCount">0 verificados</span></div><div id="indicatorList" class="indicator-list"><div class="empty">Nenhum diagnóstico carregado.</div></div></div>
+      <div class="panel"><div class="panel-head"><div><h3>Integridade dos dados</h3><p>Indicadores demonstrativos desta versão</p></div><span class="status-tag" id="qualityTag">Aguardando</span></div><div class="quality-number" id="coverage">—<small>de cobertura</small></div><div class="progress-track"><div id="coverageBar" style="width:0"></div></div><p class="panel-help">A cobertura representa apenas os indicadores demonstrativos integrados. Não significa completude do diagnóstico social.</p><div class="legend"><div><i class="green"></i>Verificado</div><div><i class="amber"></i>Não integrado</div><div><i class="gray"></i>Indisponível</div></div></div>
+    </div>
+   </section>
+   <section class="section" id="analise">
+    <div class="section-heading"><div><span class="overline blue">02 / INTELIGÊNCIA SOCIAL</span><h2>Análise territorial</h2><p>Leitura interpretativa estritamente baseada em dados públicos validados.</p></div><button class="btn btn-outline" id="analysisBtn" disabled>✧ Gerar análise social</button></div>
+    <div class="analysis-layout"><div class="analysis-panel"><div class="analysis-head"><span class="spark">✦</span><div><strong id="analysisTitle">Leitura social fundamentada</strong><small id="analysisMode">Aguardando diagnóstico</small></div></div><div id="analysisBody" class="analysis-body"><p>Depois de escolher o município, a plataforma apresentará uma leitura preliminar. A análise generativa depende de integração segura com provedor de IA e nunca substitui a validação humana.</p></div></div><div class="recommend"><span class="overline">CRITÉRIOS DE DECISÃO</span><h3>Antes de propor um projeto</h3><div class="recommend-item"><b>01</b><div><strong>Demanda comprovada</strong><p>Não extrapolar necessidade social a partir de um único indicador.</p></div></div><div class="recommend-item"><b>02</b><div><strong>Rede e capacidade</strong><p>Conferir equipamentos, políticas e parceiros existentes.</p></div></div><div class="recommend-item"><b>03</b><div><strong>Viabilidade operacional</strong><p>Dimensionar público, equipe, recursos e riscos.</p></div></div></div></div>
+   </section>
+   <section class="section" id="fontes">
+    <div class="section-heading"><div><span class="overline blue">03 / TRANSPARÊNCIA</span><h2>Fontes oficiais e auditoria</h2><p>Cada tema indica sua condição de integração. Não há preenchimento artificial de lacunas.</p></div><span class="chip chip-muted">Referências públicas</span></div>
+    <div class="modules-grid" id="moduleList"><div class="empty">Escolha um município para verificar as integrações.</div></div>
+    <div class="footnote"><b>Importante:</b> Data de consulta não é data da competência estatística. A ausência de fonte, erro de API ou dado desatualizado não deve ser apresentado como valor zero ou resultado atual.</div>
+   </section>
+   <section class="report-cta"><div><span class="overline">RELATÓRIO TÉCNICO</span><h2>Do território para a decisão.</h2><p>Exporte o conjunto de indicadores demonstrativos, fontes, limitações e leitura técnica para um PDF diagramado.</p></div><button class="btn btn-lime" id="pdfBottom" disabled>↓ Gerar relatório PDF</button></section>
+  </main>
+  <footer>© Rede Cidadã · Diagnóstico Territorial Integrado <span>Homologação V2.0 · Dados públicos · Uso técnico sujeito à validação</span></footer>
+ </div>
+</div>
+<nav class="mobile-tabs" aria-label="Navegação móvel"><a href="#visao">◧<small>Início</small></a><a href="#indicadores">◫<small>Dados</small></a><a href="#analise">✧<small>Análise</small></a><a href="#fontes">▤<small>Fontes</small></a></nav>
+</body>
+</html>
