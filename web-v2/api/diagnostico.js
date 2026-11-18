@@ -98,7 +98,7 @@ async function fetchBudget(codigo) {
       const rows = Array.isArray(response?.items) ? response.items : [];
       if (!rows.length) continue;
       function get(code) {
-        const matches = rows.filter(x => String(x.cod_interno ?? '').trim() === code && /despesas liquidadas/i.test(String(x.coluna ?? '')));
+        const matches = rows.filter(x => /despesas liquidadas/i.test(String(x.coluna ?? '')) && String(x.cod_conta ?? '').trim() === 'TotalDespesas' && String(x.rotulo ?? '').includes('Total Geral da Despesa por Função') && new RegExp('^' + code + ' \\- ').test(String(x.conta ?? '').trim()));
         const values = matches.map(x => numeric(x.valor)).filter(x => x !== null && x >= 0);
         return values.length === 1 ? values[0] : null; // recusa ambiguidades contábeis
       }
