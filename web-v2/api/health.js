@@ -1,0 +1,2 @@
+'use strict';
+module.exports = (req,res) => {if(req.method!=='GET')return res.status(405).json({error:'Método não permitido'});res.setHeader('Cache-Control','no-store');return res.status(200).json({service:'Rede Cidadã · Diagnóstico Territorial',version:'2.0-homologacao',application:'online',dataSources:'não verificado por este endpoint',time:new Date().toISOString()});};
